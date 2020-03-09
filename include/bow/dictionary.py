@@ -19,13 +19,46 @@ def create_dict(captions):
     return word_dict
 
 
-def prune_dict(word_dict):
-    """ prune words from this dictionary to improve performance of bow representation """
-    # TODO: extend this dict
-    stop_words = ['a','in', 'with', 'to', 'from', '']
+def prune_dict(word_dict, stopwords={}, min_freq=10):
+    
+    """
+    prune words from this dictionary to improve performance of bow representation 
+    
 
-    for word in stop_words:
-        if word in word_dict:
-            del word_dict[word]
+    Parameters
+    ----------
+    word_dict : dictionary
+        DESCRIPTION.
+    stopwords : set
+        user specified set of stopwords that will be deleted
+    min_freq: integer
+        mininimum frequency the word should occur to be kept 
+
+    Returns
+    -------
+    word_dict : dictionary
+        a pruned dictionary.
+
+    """
+    # length of the dictionary before pruning
+    n_old = len(word_dict)
+    
+    # remove stopwords from dictionary
+    if stopwords !={}:
+        for word in stopwords:
+            if word in word_dict:
+                del word_dict[word]
+
+    
+    # filter dictionary based on min_frequency 
+    if min_freq >0:
+        word_dict = { key:value for (key,value) in word_dict.items() if value > min_freq}
+    
+    # length of the dictionary after pruning
+    n_new = len(word_dict)
+    
+    print(f'Length dictionary before pruning: {n_old}')
+    print(f'Length dictionary after pruning: {n_new}')
+    print(f'removed {n_old-n_new} words')
 
     return word_dict

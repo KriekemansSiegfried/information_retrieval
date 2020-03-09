@@ -14,7 +14,7 @@ def convert_to_caption(line):
 def import_captions(filename):
     captions = []
 
-    with open(filename, 'r') as f:
+    with open(filename, 'r', encoding="utf8") as f:
         lines = f.readlines()
         for line in lines:
             captions.append(convert_to_caption(line))
