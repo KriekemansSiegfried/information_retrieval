@@ -12,15 +12,21 @@ from include.io.import_captions import import_captions
 from include.bow.frequent_words import rank_word_freq
 
 # style seaborn for plotting
+from include.io.import_images import import_images
+
 sns.set()
 
 # print numpy arrays in full
 np.set_printoptions(threshold=sys.maxsize)
 
-# caption_filename = '/home/kriekemans/KUL/information_retrieval/dataset/results_20130124.token'
-caption_filename = 'include/data/results_20130124.token'
+caption_filename = '/home/kriekemans/KUL/information_retrieval/dataset/results_20130124.token'
+# caption_filename = 'include/data/results_20130124.token'
+image_filename = '/home/kriekemans/KUL/information_retrieval/dataset/image_features.csv'
 
 captions = import_captions(caption_filename)
+images = import_images('/home/kriekemans/KUL/information_retrieval/dataset/image_features.csv')
+
+
 
 bow_dictionary = create_dict(captions)
 
