@@ -19,7 +19,7 @@ def create_dict(captions):
     return word_dict
 
 
-def prune_dict(word_dict, stopwords={}, min_freq=10):
+def prune_dict(word_dict, stopwords={}, min_freq=0, max_freq=0):
     
     """
     prune words from this dictionary to improve performance of bow representation 
@@ -50,9 +50,9 @@ def prune_dict(word_dict, stopwords={}, min_freq=10):
                 del word_dict[word]
 
     
-    # filter dictionary based on min_frequency 
-    if min_freq >0:
-        word_dict = { key:value for (key,value) in word_dict.items() if value > min_freq}
+    # filter dictionary based on minimum  and maximum frequency
+    if min_freq >0 | max_freq > 0:
+        word_dict = { key:value for (key,value) in word_dict.items() if value > min_freq and value < max_freq}
     
     # length of the dictionary after pruning
     n_new = len(word_dict)
