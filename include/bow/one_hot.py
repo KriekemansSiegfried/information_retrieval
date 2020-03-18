@@ -1,9 +1,15 @@
 import numpy as np
-
 from include.bow.dictionary import preprocess_token
 
 
 def get_one_hot(token, tokens):
+
+    """
+
+    :param token:
+    :param tokens:
+    :return:
+    """
     clean_token = preprocess_token(token)
     if clean_token not in tokens:
         # Cannot return one-hot representation of token that is not in list of given tokens
@@ -17,6 +23,13 @@ def get_one_hot(token, tokens):
 
 
 def convert_to_bow(caption, token_set):
+
+    """
+    :param caption:
+    :param token_set:
+    :return:
+    """
+
     tokens = caption.tokens
     vector = np.zeros(len(token_set))
 

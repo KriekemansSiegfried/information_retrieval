@@ -1,5 +1,6 @@
 
 class Image:
+    """ Class representing an image in the dataset """
 
     def __init__(self, row):
 

@@ -41,14 +41,11 @@ def rank_word_freq(dic, n=15, ascending=False, visualize=True):
           orient='index', columns=['count']).
           reset_index().rename(columns={'index':'word'}).
           sort_values(by=['count'],ascending=ascending))
-                         
-                         
+
     if visualize:
-        df.iloc[0:n,:].plot.barh(x='word', y='count', legend=None)
+        df.iloc[0:n, :].plot.barh(x='word', y='count', legend=None)
         plt.xlabel('Word counts')
         plt.ylabel('Word')
-
-
-
+        plt.show()
     
     return df
