@@ -10,3 +10,5 @@ def import_images(filename):
         for line in csv_reader:
             if len(line) > 0:
                 images.append(Image(line))
+
+    return images

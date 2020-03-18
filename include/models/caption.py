@@ -5,3 +5,9 @@ class Caption:
         self.image_id = image_id
         self.caption_id = caption_id
         self.tokens = tokens
+
+    def __str__(self):
+        return self.tokens
+
+    def __repr__(self):
+        return str(self.tokens)
