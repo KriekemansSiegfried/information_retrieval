@@ -19,7 +19,7 @@ def create_dict(captions):
     return word_dict
 
 
-def prune_dict(word_dict, stopwords={}, min_freq=0, max_freq=10**10, min_word_len=0):
+def prune_dict(word_dict, stopwords={}, min_freq=0, max_freq=0):
     
     """
     prune words from this dictionary to improve performance of bow representation 
@@ -32,9 +32,7 @@ def prune_dict(word_dict, stopwords={}, min_freq=0, max_freq=10**10, min_word_le
     stopwords : set
         user specified set of stopwords that will be deleted
     min_freq: integer
-        mininimum frequency the word should occur to be kept
-    max_freq: integer
-    min_word_len: integer
+        mininimum frequency the word should occur to be kept 
 
     Returns
     -------
@@ -43,18 +41,24 @@ def prune_dict(word_dict, stopwords={}, min_freq=0, max_freq=10**10, min_word_le
 
     """
     # length of the dictionary before pruning
-    dict_removed = dict()
-    dict_new = dict()
+    n_old = len(word_dict)
+    
+    # remove stopwords from dictionary
+    if stopwords !={}:
+        for word in stopwords:
+            if word in word_dict:
+                del word_dict[word]
 
-    # prune dictionary
-    for (key, value) in word_dict.items():
-        if min_freq < value < max_freq and len(key) >= min_word_len and key not in stopwords:
-            dict_new[key] = value
-        else:
-            dict_removed[key] = value
+    
+    # filter dictionary based on minimum  and maximum frequency
+    if min_freq >0 | max_freq > 0:
+        word_dict = { key:value for (key,value) in word_dict.items() if value > min_freq or value < max_freq}
+    
+    # length of the dictionary after pruning
+    n_new = len(word_dict)
+    
+    print(f'Length dictionary before pruning: {n_old}')
+    print(f'Length dictionary after pruning: {n_new}')
+    print(f'removed {n_old-n_new} words')
 
-    print(f'Length dictionary before pruning: {len(word_dict)}')
-    print(f'Length dictionary after pruning: {len(dict_new)}')
-    print(f'removed {len(dict_removed)} words')
-
-    return dict_new, dict_removed
+    return word_dict
