@@ -1,19 +1,22 @@
 # %% import libraries
 
 import sys
+
 import numpy as np
+import pandas as pd
+import scipy.sparse as sparse
 import seaborn as sns
 from nltk.corpus import stopwords
-# to quickly reload functions
-from importlib import reload
 
 # custom defined functions
 from include.bow import dictionary
-from include.bow import one_hot
-from include.io import import_captions as captions
 from include.bow import frequent_words as fw
-from include.io import import_images as images
+from include.bow import one_hot
+from include.io import import_captions
+from include.io import import_images
+from include.io import output_captions
 
+# to quickly reload functions
 # style seaborn for plotting
 # %matplotlib qt5 (for interactive plotting)
 sns.set()
@@ -26,12 +29,14 @@ np.set_printoptions(threshold=sys.maxsize)
 # caption_filename = '/home/kriekemans/KUL/information_retrieval/dataset/results_20130124.token'
 # image_filename = '/home/kriekemans/KUL/information_retrieval/dataset/image_features.csv'
 
-caption_filename = 'include/data/results_20130124.token'
-image_filename = 'include/data/image_features.csv'
+#caption_filename = 'include/data/results_20130124.token'
+#image_filename = 'include/data/image_features.csv'
+caption_filename = '../data/results_20130124.token'
+image_filename = '../data/image_features.csv'
 
 # import data
-captions = captions.import_captions(caption_filename)
-images = images.import_images(image_filename)
+captions = import_captions.import_captions(caption_filename)
+images = import_images.import_images(image_filename)
 
 
 # %% create captions to bow dictionary
@@ -55,7 +60,9 @@ stop_words = set(stopwords.words('english'))
 
 # prune dictionary
 bow_dict_pruned, removed_words = dictionary.prune_dict(word_dict=bow_dict,
-                                                       stopwords=stop_words, min_word_len=3)
+                                                       stopwords=stop_words, # min_word_len=5,
+                                                       min_freq=0,
+                                                       max_freq=1000)
 
 # have a look again at the most frequent words from the updated dictionary
 _ = fw.rank_word_freq(dic=bow_dict_pruned, n=20, ascending=False, visualize=True)
@@ -69,15 +76,26 @@ vector = one_hot.convert_to_bow(captions[100], tokens)
 print('caption -> {}'.format(captions[100].tokens))
 print('bow -> ', vector)
 
-# %% apply the one_hot encoding to has each caption
-for i in range(len(captions)):
-    captions[i].features = one_hot.convert_to_bow(captions[i], tokens)
-    if i % 10000 == 0:
-        print(i)
+# %%
 
+# write captions to csv + update models/captions with feature
+# compress=True means we only store the colnumber of features which are 1
+output_captions.output_captions(captions=captions, tokens=tokens,
+                                file_name="include/data/caption_features.npz",
+                                n_rows=None)
+# representation
+print(captions[10].features)
+
+# %% load caption features in compressed format
+
+df_captions = sparse.load_npz('include/data/caption_features.npz')
+# if you want to go to the uncompressed format
+# df_captions_uncomp = df_captions.todense()
+
+# %%images (normal format) (this is in pandas dataframe format) (31782, 2049)
+df_image = pd.read_csv("include/data/image_features.csv", sep=" ", header=None)
 
 # TODO:
-#   1) BOW oke: still fine tuning e.g. example remove words with fewer character than 3
-#   2) Image vectors: oke
-#   3) make pairs
-#   4) Define architecture NN (keras)  + loss functions
+#   1) Define train/valdiation/test (and train_valdation ==> for training your final network)
+#   2) Define architecture NN (keras)
+#   3) loss functions

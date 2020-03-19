@@ -1,2 +1,3 @@
 include/data/image_features.csv
 include/data/results_20130124.token
+include/data/caption_features.npz
