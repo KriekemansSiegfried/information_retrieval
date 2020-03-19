@@ -29,8 +29,10 @@ np.set_printoptions(threshold=sys.maxsize)
 # caption_filename = '/home/kriekemans/KUL/information_retrieval/dataset/results_20130124.token'
 # image_filename = '/home/kriekemans/KUL/information_retrieval/dataset/image_features.csv'
 
-caption_filename = 'include/data/results_20130124.token'
-image_filename = 'include/data/image_features.csv'
+#caption_filename = 'include/data/results_20130124.token'
+#image_filename = 'include/data/image_features.csv'
+caption_filename = '../data/results_20130124.token'
+image_filename = '../data/image_features.csv'
 
 # import data
 captions = import_captions.import_captions(caption_filename)
@@ -58,9 +60,9 @@ stop_words = set(stopwords.words('english'))
 
 # prune dictionary
 bow_dict_pruned, removed_words = dictionary.prune_dict(word_dict=bow_dict,
-                                                       stopwords=stop_words, min_word_len=5,
-                                                       max_freq=1000,
-                                                       min_freq=0)
+                                                       stopwords=stop_words, # min_word_len=5,
+                                                       min_freq=0,
+                                                       max_freq=1000)
 
 # have a look again at the most frequent words from the updated dictionary
 _ = fw.rank_word_freq(dic=bow_dict_pruned, n=20, ascending=False, visualize=True)

@@ -22,7 +22,7 @@ def output_captions(captions, tokens, file_name="include/data/caption_features",
     result_arr = []
     for i in range(n_rows):
         out = one_hot.convert_to_bow(captions[i], tokens)
-        # save as a sparse vector (not this is not the same as the sparse_matrix)
+        # save as a sparse vector (note this is not the same as the sparse_matrix)
         captions[i].features = csr_matrix(out)
         result_arr.append(out)
         if i % 10000 == 0 and verbose:
