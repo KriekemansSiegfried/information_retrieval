@@ -17,24 +17,26 @@ from include.io import import_images
 from include.io import output_captions
 
 # to quickly reload functions
+
+
 # style seaborn for plotting
-# %matplotlib qt5 (for interactive plotting)
+# %matplotlib qt5 (for interactive plotting: run in the python console)
 sns.set()
 # print numpy arrays in full
 np.set_printoptions(threshold=sys.maxsize)
-
 
 # %%  import data
 
 # caption_filename = '/home/kriekemans/KUL/information_retrieval/dataset/results_20130124.token'
 # image_filename = '/home/kriekemans/KUL/information_retrieval/dataset/image_features.csv'
 
-#caption_filename = 'include/data/results_20130124.token'
-#image_filename = 'include/data/image_features.csv'
-caption_filename = '../data/results_20130124.token'
-image_filename = '../data/image_features.csv'
+# caption_filename = '../data/results_20130124.token'
+# image_filename = '../data/image_features.csv'
 
-# import data
+caption_filename = 'include/data/results_20130124.token'
+image_filename = 'include/data/image_features.csv'
+
+# read in data
 captions = import_captions.import_captions(caption_filename)
 images = import_images.import_images(image_filename)
 
@@ -60,7 +62,8 @@ stop_words = set(stopwords.words('english'))
 
 # prune dictionary
 bow_dict_pruned, removed_words = dictionary.prune_dict(word_dict=bow_dict,
-                                                       stopwords=stop_words, # min_word_len=5,
+                                                       stopwords=stop_words,
+                                                       min_word_len=3,
                                                        min_freq=0,
                                                        max_freq=1000)
 
@@ -76,13 +79,10 @@ vector = one_hot.convert_to_bow(captions[100], tokens)
 print('caption -> {}'.format(captions[100].tokens))
 print('bow -> ', vector)
 
-# %%
-
-# write captions to csv + update models/captions with feature
-# compress=True means we only store the colnumber of features which are 1
+# %% output captions to compressed format + update captions.features
 output_captions.output_captions(captions=captions, tokens=tokens,
                                 file_name="include/data/caption_features.npz",
-                                n_rows=None)
+                                n_rows=len(captions))
 # representation
 print(captions[10].features)
 

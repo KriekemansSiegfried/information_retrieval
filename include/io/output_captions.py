@@ -9,10 +9,8 @@ def output_captions(captions, tokens, file_name="include/data/caption_features",
     :param captions:
     :param tokens:
     :param file_name:
-    :param compress:
     :param verbose:
     :param n_rows:
-    :param sep:
     :return:
     """
 
