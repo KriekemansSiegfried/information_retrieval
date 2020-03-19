@@ -1,4 +1,3 @@
-# %% apply the one_hot encoding to has each caption
 import csv
 
 from include.bow import one_hot
