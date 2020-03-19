@@ -1,18 +1,21 @@
 # %% import libraries
 
 import sys
+
 import numpy as np
+import pandas as pd
 import seaborn as sns
 from nltk.corpus import stopwords
-# to quickly reload functions
-from importlib import reload
 
 # custom defined functions
 from include.bow import dictionary
-from include.bow import one_hot
-from include.io import import_captions as captions
 from include.bow import frequent_words as fw
-from include.io import import_images as images
+from include.bow import one_hot
+from include.io import import_captions
+from include.io import import_images
+from include.io import output_captions
+
+# to quickly reload functions
 
 # style seaborn for plotting
 # %matplotlib qt5 (for interactive plotting)
@@ -30,8 +33,8 @@ caption_filename = 'include/data/results_20130124.token'
 image_filename = 'include/data/image_features.csv'
 
 # import data
-captions = captions.import_captions(caption_filename)
-images = images.import_images(image_filename)
+captions = import_captions.import_captions(caption_filename)
+images = import_images.import_images(image_filename)
 
 
 # %% create captions to bow dictionary
@@ -69,12 +72,18 @@ vector = one_hot.convert_to_bow(captions[100], tokens)
 print('caption -> {}'.format(captions[100].tokens))
 print('bow -> ', vector)
 
-# %% apply the one_hot encoding to has each caption
-for i in range(len(captions)):
-    captions[i].features = one_hot.convert_to_bow(captions[i], tokens)
-    if i % 10000 == 0:
-        print(i)
+# %%
 
+# write captions to csv + update models/captions with feature
+# compress=True means we only store the colnumber of features which are 1
+output_captions.output_captions(captions=captions, tokens=tokens,
+                                file_name="include/data/caption_features.csv",
+                                compress=True)
+captions[10].features
+
+# %% import data
+# TODO: Make import statement for caption_features.csv
+df_image = pd.read_csv("include/data/image_features.csv", sep=" ")
 
 # TODO:
 #   1) BOW oke: still fine tuning e.g. example remove words with fewer character than 3
