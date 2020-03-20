@@ -9,38 +9,42 @@ import seaborn as sns
 from nltk.corpus import stopwords
 
 # custom defined functions
-from include.bow import dictionary, frequent_words as fw, one_hot
-from include.io import import_captions, import_images, output_captions
-# style seaborn for plotting
-# %matplotlib qt5 (for interactive plotting: run in the python console)
-from include.networks.network import get_network_siamese, get_network
+from include.bow import dictionary
+from include.bow import frequent_words as fw
+from include.bow import one_hot
+from include.io import import_captions
+from include.io import import_images
+from include.io import output_captions
 
 # to quickly reload functions
-from include.training.dataset import convert_to_dataset
-from include.util.pairs import get_pairs_images, make_dict
+# style seaborn for plotting
+# %matplotlib qt5 (for interactive plotting)
+from include.networks import network
 
 sns.set()
 # print numpy arrays in full
 np.set_printoptions(threshold=sys.maxsize)
 
-print('loading network1')
-network = get_network(3000)
-print('loading network2')
-network = get_network_siamese(3000, 3000, 1000)
-print('network loaded')
+# dummy function to check if tensorflow instalaton works
+_ = network.get_network(5)
+_ = network.get_network_siamese(11, 2, 0)
+print('tensorflow ok')
+
+
 # %%  import data
 
 # caption_filename = '/home/kriekemans/KUL/information_retrieval/dataset/results_20130124.token'
 # image_filename = '/home/kriekemans/KUL/information_retrieval/dataset/image_features.csv'
 
+#caption_filename = 'include/data/results_20130124.token'
+#image_filename = 'include/data/image_features.csv'
 caption_filename = '../data/results_20130124.token'
 image_filename = '../data/image_features.csv'
-# read in data
+
+# import data
 captions = import_captions.import_captions(caption_filename)
 images = import_images.import_images(image_filename)
 
-print('loaded {} captions'.format(len(captions)))
-print('loaded {} images'.format(len(images)))
 
 # %% create captions to bow dictionary
 bow_dict = dictionary.create_dict(captions)
@@ -63,48 +67,46 @@ stop_words = set(stopwords.words('english'))
 
 # prune dictionary
 bow_dict_pruned, removed_words = dictionary.prune_dict(word_dict=bow_dict,
-                                                       stopwords=stop_words,
-                                                       min_word_len=3,
+                                                       stopwords=stop_words, # min_word_len=5,
                                                        min_freq=0,
                                                        max_freq=1000)
 
 # have a look again at the most frequent words from the updated dictionary
-# _ = fw.rank_word_freq(dic=bow_dict_pruned, n=20, ascending=False, visualize=True)
+_ = fw.rank_word_freq(dic=bow_dict_pruned, n=20, ascending=False, visualize=True)
 
 # have a look at the removed words
-# _ = fw.rank_word_freq(dic=removed_words, n=20, ascending=False, visualize=True)
+_ = fw.rank_word_freq(dic=removed_words, n=20, ascending=False, visualize=True)
 
 # %% # one hot encode
 tokens = list(bow_dict_pruned.keys())
 vector = one_hot.convert_to_bow(captions[100], tokens)
 print('caption -> {}'.format(captions[100].tokens))
+print('bow -> ', vector)
 
-print('creating pairs')
-pairs = get_pairs_images(make_dict(images,captions))
-print('pairs created')
-print('creating dataset with labels')
-dataset, labels = convert_to_dataset(pairs)
-print('dataset created')
+# %%
+
+# write captions to csv + update models/captions with feature
+# compress=True means we only store the colnumber of features which are 1
+output_captions.output_captions(captions=captions, tokens=tokens,
+                                file_name="include/data/caption_features.npz",
+                                n_rows=None)
+# representation
+print(captions[10].features)
+
+# %% load caption features in compressed format
+
+df_captions = sparse.load_npz('include/data/caption_features.npz')
+# if you want to go to the uncompressed format
+# df_captions_uncomp = df_captions.todense()
+
+# %%images (normal format) (this is in pandas dataframe format) (31782, 2049)
+df_image = pd.read_csv("include/data/image_features.csv", sep=" ", header=None)
+
+# TODO:
+#   1) Define train/valdiation/test (and train_valdation ==> for training your final network)
+#   2) Define architecture NN (keras)
+#   3) loss functions
+
+# dummy function to check if tensorflow instalaton works
 
 
-
-# %% output captions to compressed format + update captions.features
-# output_captions.output_captions(captions=captions, tokens=tokens,
-#                                 file_name="include/data/caption_features.npz",
-#                                 n_rows=len(captions))
-# # representation
-# print(captions[10].features)
-
-# # %% load caption features in compressed format
-#
-# df_captions = sparse.load_npz('include/data/caption_features.npz')
-# # if you want to go to the uncompressed format
-# # df_captions_uncomp = df_captions.todense()
-#
-# # %%images (normal format) (this is in pandas dataframe format) (31782, 2049)
-# df_image = pd.read_csv("include/data/image_features.csv", sep=" ", header=None)
-#
-# # TODO:
-# #   1) Define train/valdiation/test (and train_valdation ==> for training your final network)
-# #   2) Define architecture NN (keras)
-# #   3) loss functions
