@@ -1,15 +1,24 @@
+import numpy as np
 from numpy import float64
+from numpy.linalg import norm
 from tensorflow_core.python.keras.engine.input_layer import Input
 from tensorflow_core.python.keras.layers import Dense
 from tensorflow_core.python.keras.layers.merge import Concatenate
 from tensorflow_core.python.keras.losses import MeanSquaredError
-from tensorflow_core.python.keras.models import Sequential, Model
+from tensorflow_core.python.keras.models import Model, Sequential
 
 
-def custom_distance_loss(y, label):
+def custom_distance_loss(label, y_pred):
     """ TODO: implement this loss -> cosine or l2"""
-    print('custom loss!')
-    return float64(0)
+    print('custom loss! -> {} , {}'.format(label, y_pred.shape))
+    print('split point -> {}'.format(y_pred.shape[1] / 2))
+
+    embeddings = np.split(y_pred.numpy(), 2, axis=1)
+    caption_embedding = embeddings[0]
+    image_embedding = embeddings[1]
+
+    print('embeddings -> {}'.format(embeddings))
+    return norm(caption_embedding - image_embedding)
 
 
 def get_network(input_size):
@@ -37,6 +46,7 @@ def get_network_siamese(caption_feature_size, image_feature_size, embedding_size
     image_output = Dense(embedding_size, activation='relu')(image_hidden)
 
     concat = Concatenate()([caption_output, image_output])
+
     model = Model(inputs=[caption_input, image_input], outputs=concat)
     model.compile(loss=custom_distance_loss, optimizer='adam', metrics=['accuracy'])
     return model

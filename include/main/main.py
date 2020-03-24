@@ -26,7 +26,6 @@ np.set_printoptions(threshold=sys.maxsize)
 print('loading network1')
 network = get_network(3000)
 print('loading network2')
-network = get_network_siamese(3000, 3000, 1000)
 print('network loaded')
 # %%  import data
 
@@ -76,15 +75,24 @@ bow_dict_pruned, removed_words = dictionary.prune_dict(word_dict=bow_dict,
 
 # %% # one hot encode
 tokens = list(bow_dict_pruned.keys())
-vector = one_hot.convert_to_bow(captions[100], tokens)
-print('caption -> {}'.format(captions[100].tokens))
 
+print('converting caption features')
+for caption in captions:
+    caption.features = one_hot.convert_to_bow(caption, tokens)
+print('features converted')
+
+print('creating pair dict')
+pair_dict = make_dict(images,captions)
 print('creating pairs')
-pairs = get_pairs_images(make_dict(images,captions))
+pairs = get_pairs_images(pair_dict)
 print('pairs created')
 print('creating dataset with labels')
 dataset, labels = convert_to_dataset(pairs)
 print('dataset created')
+
+network = get_network_siamese(len(images[0].features), len(captions[0].features), 1024)
+
+network.fit(dataset, labels)
 
 
 
