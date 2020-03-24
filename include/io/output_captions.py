@@ -21,10 +21,13 @@ def output_captions(captions, tokens, file_name="include/data/caption_features",
     for i in range(n_rows):
         out = one_hot.convert_to_bow(captions[i], tokens)
         # save as a sparse vector (note this is not the same as the sparse_matrix)
-        captions[i].features = csr_matrix(out)
+        captions[i].features = csr_matrix(out, dtype=np.int8)
         result_arr.append(out)
         if i % 10000 == 0 and verbose:
             print(i)
     result_arr = np.vstack(result_arr)
-    sparse_matrix = csr_matrix(result_arr)
+    sparse_matrix = csr_matrix(result_arr, dtype=np.int8)
+    # save sparse matrix
+    if verbose:
+        print("saving data")
     save_npz(file_name, sparse_matrix)

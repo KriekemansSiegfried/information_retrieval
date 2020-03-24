@@ -1,5 +1,5 @@
-import pandas as pd
 import matplotlib.pyplot as plt
+import pandas as pd
 
 
 def rank_word_freq(dic, n=15, ascending=False, visualize=True):
@@ -40,7 +40,7 @@ def rank_word_freq(dic, n=15, ascending=False, visualize=True):
     df = (pd.DataFrame.from_dict(dic, 
           orient='index', columns=['count']).
           reset_index().rename(columns={'index':'word'}).
-          sort_values(by=['count'],ascending=ascending))
+          sort_values(by=['count'], ascending=ascending))
 
     if visualize:
         df.iloc[0:n, :].plot.barh(x='word', y='count', legend=None)

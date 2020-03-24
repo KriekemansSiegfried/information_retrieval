@@ -1,10 +1,21 @@
 def preprocess_token(token):
+    """
+
+    :param token:
+    :return:
+    """
+
     delete_chars = "\n\t .;,\\"
     return ''.join(c for c in token.lower() if c not in delete_chars)
 
 
 def create_dict(captions):
-    """ Create a dictionary with counts to each word in a given list of sentences """
+    """
+    Create a dictionary with counts to each word in a given list of sentences
+
+    :param captions:
+    :return:
+    """
     word_dict = {}
 
     for caption in captions:

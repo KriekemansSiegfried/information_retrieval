@@ -1,5 +1,4 @@
 import numpy as np
-from numpy import float64
 from numpy.linalg import norm
 from tensorflow_core.python.keras.engine.input_layer import Input
 from tensorflow_core.python.keras.layers import Dense
@@ -22,6 +21,12 @@ def custom_distance_loss(label, y_pred):
 
 
 def get_network(input_size):
+    """
+
+    :param input_size:
+    :return:
+    """
+
     model = Sequential()
     model.add(Dense(input_size, activation='relu'))
     model.add(Dense(4096, activation='relu'))
