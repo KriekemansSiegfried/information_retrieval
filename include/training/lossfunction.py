@@ -18,9 +18,43 @@ def img_caption_loss(img_feature, pos_caption_features, neg_caption_features, ma
 
     for pos in positives:
         for neg in negatives:
-            loss = loss + max(0, pos - neg + margin)
+            lo = max(0, neg - pos + margin)  # <- should this not be 'neg - pos' if we want to minimize loss?
+            loss = loss + lo  # response: changed it to that
+            # loss = loss + max(0, pos - neg + margin)
     return loss
 
 
 def caption_img_loss(caption_feature, pos_img_features, neg_img_features, margin=0):
     return img_caption_loss(caption_feature, pos_img_features, neg_img_features, margin=margin)
+
+
+def individual_feature_loss(caption_feature, img_feature, margin=0):
+    cos_sim = np.dot(caption_feature, img_feature) / (norm(caption_feature) * norm(img_feature))
+    loss = max(0, cos_sim - margin)
+    return loss
+
+
+# Loss function test code
+
+# build img_feature
+img_feature1 = np.array([0.9, 0.02, 0.05])
+img_feature2 = np.array([0.0, 0.75, 0.95])
+
+# build pos_caption_feature
+vect1 = np.array([0.8, 0.02, 0.06])
+vect2 = np.array([0.7, 0.1, 0.05])
+vect3 = np.array([0.95, 0.2, 0.1])
+pos_caption_features = np.array([vect1, vect2, vect3])
+# pos_caption_features.add(vect1)
+# pos_caption_features.add(vect2)
+# pos_caption_features.add(vect3)
+
+# build neg_caption_feature
+vect4 = np.array([0.1, 0.8, 0.06])
+vect5 = np.array([0.01, 0.1, 0.9])
+vect6 = np.array([0.6, 0.5, 0.8])
+neg_caption_features = np.array([vect4, vect5, vect6])
+
+print(img_caption_loss(img_feature1, pos_caption_features, neg_caption_features))
+print('-----')
+print(img_caption_loss(img_feature2, pos_caption_features, neg_caption_features))
