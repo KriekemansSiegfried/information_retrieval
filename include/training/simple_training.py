@@ -1,9 +1,52 @@
-#use 'model checkpoint' to retrace best prior model
+# use 'model checkpoint' to retrace best prior model
 import io
+import os
 import sys
+import warnings
+
+warnings.filterwarnings("ignore")
 text_trap = io.StringIO()
-print('performing imports... ', end='', flush=True)
-sys.stdout = text_trap
+printing_active = True
+
+running_model = None
+df_captions = None
+df_image = None
+
+print('\033[31m' + "WARNING: IN THIS FILE, ALL WARNINGS ARE DEACTIVATED" + '\033[0m')
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+
+
+def interface_print(string, keep_line=False, red=False):
+    global printing_active
+    if red:
+        string = '\33[31m' + string + '\33[0m'
+    if printing_active:
+        print(string, end='', flush=True)
+        sys.stdout = text_trap
+        printing_active = False
+    elif not keep_line:
+        sys.stdout = sys.__stdout__
+        print(string)
+        printing_active = True
+    else:
+        sys.stdout = sys.__stdout__
+        print(string, end='', flush=True)
+        sys.stdout = text_trap
+
+
+def single_line_print(string, red=False):
+    global printing_active
+    if red:
+        string = '\33[31m' + string + '\33[0m'
+    if printing_active:
+        print(string)
+    else:
+        printing_active = True
+        sys.stdout = sys.__stdout__
+        print(string)
+
+
+interface_print("performing imports... ")
 from collections import OrderedDict
 import matplotlib.pyplot as plt
 import numpy as np
@@ -20,43 +63,91 @@ from tensorflow.keras.models import Sequential
 # own code
 from include.networks import network as nw
 
-sys.stdout = sys.__stdout__
-print('done', flush=True)
+interface_print("done")
 
-# data read home directory, this differs on some of our computers
-# data_read_home = "include/data/"          # |--> for Pieter-Jan and Siegfried
-data_read_home = "../data/"                 # |--> for Giel
-running_model = None
+"""---------------------------------concerning data to be worked with------------------------------------------------"""
+
+
+def load_data(caption_file_path, image_features_path):
+    """
+    :param caption_file_path: directory of the file containing the caption features
+    :param image_features_path: directory of the file containing the corresponding image features
+    :return:
+    """
+    global df_captions, df_image
+    try:
+        interface_print('importing caption file... ')
+        df_captions = sparse.load_npz(caption_file_path)
+        interface_print('done')
+        interface_print('importing image features... ')
+        df_image = pd.read_csv(image_features_path, sep=" ", header=None)
+        interface_print('done')
+    except Exception as e:
+        interface_print("DATA IMPORT FAILED", red=True)
+        interface_print("underlining exception was: ")
+        interface_print(str(e), red=True)
+
+
+def default_data_load():
+    """
+    loads the data from the default directories
+    :return:
+    """
+    caption_path = 'include/data/caption_features.npz'
+    feature_path = "include/data/image_features.csv"
+    load_data(caption_path, feature_path)
+
+
+"""---------------------------------concerning current model/the model used------------------------------------------"""
 
 
 def import_model(file_path):
-    print('importing model... ', end='', flush=True)
-    sys.stdout = text_trap
+    """
+    :param file_path: the directorie of the model to be loaded
+    :return: no return value is given, if filepath ok, running_model will be altered
+    """
     global running_model
-    running_model = nw.import_network(file_path)
-    sys.stdout = sys.__stdout__
-    print('done')
-    print(running_model.layers[0].input_shape)
-    print(running_model.layers[len(running_model.layers) - 1].output_shape)
+    if file_path[-3:] != ".h5":
+        single_line_print("ERROR: file of '.h5' format was expected, but "
+                          + file_path[-3:] + " was given, NO NEW MODEL LOADED", red=True)
+        return
+    try:
+        interface_print('importing model... ')
+        running_model = nw.import_network(file_path)
+        interface_print('done')
+        in_size = running_model.layers[0].input_shape[1]
+        out_size = running_model.layers[len(running_model.layers) - 1].output_shape[1]
+        single_line_print("new model of form MODEL: R_" + str(in_size) + " |--> R_" + str(out_size))
+    except Exception as e:
+        interface_print("MODEL IMPORT FAILED", red=True)
+        interface_print("underlining exception was: ")
+        interface_print(str(e), red=True)
 
 
 def export_model(file_path):
-    nw.export_network(file_path, running_model)
+    """
+    :param file_path: directory to which to save the newly learned model
+    :return: no return value given
+    """
+    global running_model
+    if file_path[-3:] != ".h5":
+        single_line_print("ERROR: file of '.h5' format was expected, MODEL NOT SAVED", red=True)
+        return
+    try:
+        interface_print('exporting model... ')
+        nw.export_network(file_path, running_model)
+        interface_print('done')
+    except Exception as e:
+        interface_print("MODEL EXPORT FAILED", red=True)
+        interface_print("underlining exception was: ")
+        interface_print(str(e), red=True)
+
+
+def get_model_info():
+    global running_model
+    running_model.summary()
 
 """
-# %% load data
-print("loading 'caption_features.npz'... ", end='', flush=True)
-df_captions = sparse.load_npz(data_read_home + "caption_features.npz")
-print("done", flush=True)
-# if you want to go to the uncompressed format
-# df_captions_uncomp = df_captions.todense()
-
-# images (normal format) (this is in pandas dataframe format) (31782, 2049)
-print("loading 'image_features.csv'... ", end='', flush=True)
-df_image = pd.read_csv(data_read_home + "image_features.csv",
-                       sep=" ", header=None)
-print("done", flush=True)
-
 # %% subset captions and image to start with few examples
 num_samples = 2000
 X_captions_subset = df_captions[0:num_samples, :][::5].todense().astype(float)
@@ -154,6 +245,8 @@ def rank_images(true_label, predictions, scoring_function='mse'):
     :param scoring_function:
     :return:
     """
+
+
 """
     ranking = {}
     for i in range(len(true_label)):

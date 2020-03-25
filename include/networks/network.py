@@ -4,7 +4,7 @@ from tensorflow_core.python.keras.engine.input_layer import Input
 from tensorflow_core.python.keras.layers import Dense
 from tensorflow_core.python.keras.layers.merge import Concatenate
 from tensorflow_core.python.keras.losses import MeanSquaredError
-from tensorflow_core.python.keras.models import Model, Sequential
+from tensorflow_core.python.keras.models import Model, Sequential, load_model
 from tensorflow_core.python.ops.linalg_ops import norm
 
 
@@ -53,3 +53,12 @@ def get_network_siamese(caption_feature_size, image_feature_size, embedding_size
     model = Model(inputs=[caption_input, image_input], outputs=concat)
     model.compile(loss=custom_loss(), optimizer='sgd', metrics=['accuracy'])
     return model
+
+
+def import_model(file_path):
+    model = load_model(file_path)
+    return model
+
+
+def export_model(file_path, model):
+    model.save(file_path)

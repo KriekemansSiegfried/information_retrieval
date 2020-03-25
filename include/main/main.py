@@ -9,7 +9,7 @@ from nltk.corpus import stopwords
 
 # custom defined functions
 from include.bow import dictionary, frequent_words as fw, one_hot
-from include.io import import_captions, import_images
+from include.io import import_captions, import_images, output_captions
 # style seaborn for plotting
 # %matplotlib qt5 (for interactive plotting: run in the python console)
 from include.networks.network import get_network
@@ -30,8 +30,8 @@ print('network loaded')
 # caption_filename = '/home/kriekemans/KUL/information_retrieval/dataset/results_20130124.token'
 # image_filename = '/home/kriekemans/KUL/information_retrieval/dataset/image_features.csv'
 
-caption_filename = 'include/data/results_20130124.token'
-image_filename = 'include/data/image_features.csv'
+caption_filename = '../data/results_20130124.token'
+image_filename = '../data/image_features.csv'
 # read in data
 captions = import_captions.import_captions(caption_filename)
 images = import_images.import_images(image_filename)
@@ -102,9 +102,9 @@ print('dataset created')
 
 
 # %% output captions to compressed format + update captions.features
-# output_captions.output_captions(captions=captions, tokens=tokens,
-#                                 file_name="include/data/caption_features.npz",
-#                                 n_rows=len(captions))
+output_captions.output_captions(captions=captions, tokens=tokens,
+                                file_name="include/data/caption_features.npz",
+                                n_rows=len(captions))
 # # representation
 # print(captions[10].features)
 
