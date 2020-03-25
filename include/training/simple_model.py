@@ -4,13 +4,16 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import scipy.sparse as sparse
+import seaborn as sns
 from scipy import spatial
+
+sns.set()
 # keras
 from sklearn.model_selection import train_test_split
 from tensorflow.keras import optimizers
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 from tensorflow.keras.callbacks import ReduceLROnPlateau
-from tensorflow.keras.layers import Dense, Dropout
+from tensorflow.keras.layers import Dense
 from tensorflow.keras.models import Sequential
 
 # %% load data
@@ -23,7 +26,7 @@ df_image = pd.read_csv("include/data/image_features.csv",
                        sep=" ", header=None)
 
 # %% subset captions and image to start with few examples
-num_samples = 2000
+num_samples = 5000
 X_captions_subset = df_captions[0:num_samples, :][::5].todense().astype(float)
 y_image_subset = df_image.iloc[0:int(num_samples / 5), :].values
 
@@ -39,9 +42,9 @@ print(f'Size validation X: {X_val.shape}, validation y labels {y_val.shape}')
 
 model = Sequential()
 model.add(Dense(32, activation='relu', input_dim=X_train.shape[1]))
-model.add(Dropout(0.1))
-model.add(Dense(1024, activation='relu'))
-model.add(Dropout(0.05))
+# model.add(Dropout(0.1))
+model.add(Dense(4096, activation='relu'))
+# model.add(Dropout(0.05))
 model.add(Dense(2048, activation='linear'))
 
 model.summary()
@@ -49,9 +52,9 @@ model.summary()
 # %%
 
 # play with these parameters and see what works
-batch_size = 126
+batch_size = 512
 epochs = 100
-learning_rate = 5e-2
+learning_rate = 5e-3
 
 # reduce learning rate when no improvement are made
 optim = optimizers.Adam(lr=learning_rate, beta_1=0.90, beta_2=0.999, epsilon=None, decay=1e-6, amsgrad=False)
@@ -131,6 +134,7 @@ def rank_images(true_label, predictions, scoring_function='mse'):
             else:
                 print("metric not available, available metrics include mse and cosine")
             scores_[true_label[j, 0]] = score
+        # save id and scores in ascending (score) order
         ranking[true_label[i, 0]] = OrderedDict(sorted(scores_.items(), key=lambda x: x[1]))
     return ranking
 
