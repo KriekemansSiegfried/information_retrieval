@@ -16,21 +16,16 @@ def convert_to_dataset(pairs):
         # add positive example
         image_features_set.append(image_features)
         caption_features_set.append(positive_caption_features)
-        labels.append(1)
+        labels.append(np.float64(1))
 
         # add negative example
         image_features_set.append(image_features)
         caption_features_set.append(negative_caption_features)
-        labels.append(0)
+        labels.append(np.float64(0))
 
     image_features_set = np.stack(image_features_set, axis=0)
     caption_features_set = np.stack(caption_features_set, axis=0)
     labels = np.stack(labels, axis=0)
 
-    print('images -> {}'.format(image_features_set.shape))
-    print('caption_features_set -> {}'.format(caption_features_set.shape))
-    print('labels -> {}'.format(labels.shape))
-
-    print('{} pairs '.format(len(pairs)))
     return [image_features_set, caption_features_set], labels
 

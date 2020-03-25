@@ -1,3 +1,5 @@
+from numpy import float64
+
 
 class Image:
     """ Class representing an image in the dataset """
@@ -7,4 +9,4 @@ class Image:
         self.image_name = row[0]
         self.features = []
         for i in range(1,len(row)):
-            self.features.append(row[i])
+            self.features.append(float64(row[i]))

@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import scipy.sparse as sparse
 import seaborn as sns
+import tensorflow
 from nltk.corpus import stopwords
 
 # custom defined functions
@@ -90,9 +91,10 @@ print('creating dataset with labels')
 dataset, labels = convert_to_dataset(pairs)
 print('dataset created')
 
-network = get_network_siamese(len(images[0].features), len(captions[0].features), 1024)
 
-network.fit(dataset, labels)
+tensorflow.executing_eagerly()
+network = get_network_siamese(len(images[0].features), len(captions[0].features), 1024)
+network.fit(dataset, labels, epochs=10, batch_size=1)
 
 
 
