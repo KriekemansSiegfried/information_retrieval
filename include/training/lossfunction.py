@@ -3,6 +3,15 @@ from numpy.linalg import norm
 
 
 def img_caption_loss(img_feature, pos_caption_features, neg_caption_features, margin=0):
+    """
+
+    :param img_feature:
+    :param pos_caption_features:
+    :param neg_caption_features:
+    :param margin:
+    :return:
+    """
+
     loss = 0
     img_norm = norm(img_feature)
     positives = set()

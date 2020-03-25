@@ -2,6 +2,12 @@ from include.models.caption import Caption
 
 
 def convert_to_caption(line):
+    """
+
+    :param line:
+    :return:
+    """
+
     first_split = line.split("#", 1)
     second_split = first_split[1].split("\t", 1)
 
@@ -11,6 +17,11 @@ def convert_to_caption(line):
     return Caption(image_id, caption_id, tokens)
 
 def import_captions(filename):
+    """
+
+    :param filename:
+    :return:
+    """
     captions = []
 
     with open(filename, mode='r', encoding="utf8") as f:

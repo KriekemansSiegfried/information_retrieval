@@ -3,19 +3,16 @@
 import sys
 
 import numpy as np
-import pandas as pd
 import scipy.sparse as sparse
 import seaborn as sns
-import tensorflow
 from nltk.corpus import stopwords
 
 # custom defined functions
 from include.bow import dictionary, frequent_words as fw, one_hot
-from include.io import import_captions, import_images, output_captions
+from include.io import import_captions, import_images
 # style seaborn for plotting
 # %matplotlib qt5 (for interactive plotting: run in the python console)
-from include.networks.network import get_network_siamese, get_network
-
+from include.networks.network import get_network
 # to quickly reload functions
 from include.training.dataset import convert_to_dataset
 from include.util.pairs import get_pairs_images, make_dict
@@ -33,8 +30,8 @@ print('network loaded')
 # caption_filename = '/home/kriekemans/KUL/information_retrieval/dataset/results_20130124.token'
 # image_filename = '/home/kriekemans/KUL/information_retrieval/dataset/image_features.csv'
 
-caption_filename = '../data/results_20130124.token'
-image_filename = '../data/image_features.csv'
+caption_filename = 'include/data/results_20130124.token'
+image_filename = 'include/data/image_features.csv'
 # read in data
 captions = import_captions.import_captions(caption_filename)
 images = import_images.import_images(image_filename)
@@ -78,12 +75,19 @@ bow_dict_pruned, removed_words = dictionary.prune_dict(word_dict=bow_dict,
 tokens = list(bow_dict_pruned.keys())
 
 print('converting caption features')
+progress = 0
 for caption in captions:
-    caption.features = one_hot.convert_to_bow(caption, tokens)
+    progress += 1
+    if progress % 2500 == 0:
+        print(progress)
+    # efficiently store sparse matrix
+    # see https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csr_matrix.html
+    caption.features = sparse.csr_matrix(one_hot.convert_to_bow(caption, tokens), dtype=np.int8)
+# %%
 print('features converted')
 
 print('creating pair dict')
-pair_dict = make_dict(images,captions)
+pair_dict = make_dict(images, captions)
 print('creating pairs')
 pairs = get_pairs_images(pair_dict)
 print('pairs created')
@@ -91,10 +95,9 @@ print('creating dataset with labels')
 dataset, labels = convert_to_dataset(pairs)
 print('dataset created')
 
+# network = get_network_siamese(len(images[0].features), len(captions[0].features), 1024)
 
-tensorflow.executing_eagerly()
-network = get_network_siamese(len(images[0].features), len(captions[0].features), 1024)
-network.fit(dataset, labels, epochs=10, batch_size=1)
+# network.fit(dataset, labels)
 
 
 

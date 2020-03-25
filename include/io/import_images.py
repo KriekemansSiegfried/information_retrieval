@@ -1,8 +1,14 @@
 import csv
+
 from include.models.image import Image
 
 
 def import_images(filename):
+    """
+
+    :param filename:
+    :return:
+    """
     images = []
     with open(filename, mode='r', encoding="utf8") as file:
         csv_reader = csv.reader(file, delimiter=' ')

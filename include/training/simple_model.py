@@ -1,49 +1,27 @@
-#use 'model checkpoint' to retrace best prior model
-import io
-import sys
-text_trap = io.StringIO()
 print('performing imports... ', end='', flush=True)
-sys.stdout = text_trap
 from collections import OrderedDict
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import scipy.sparse as sparse
+import seaborn as sns
 from scipy import spatial
+
+sns.set()
 # keras
 from sklearn.model_selection import train_test_split
 from tensorflow.keras import optimizers
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 from tensorflow.keras.callbacks import ReduceLROnPlateau
-from tensorflow.keras.layers import Dense, Dropout
+from tensorflow.keras.layers import Dense
 from tensorflow.keras.models import Sequential
-# own code
-from include.networks import network as nw
 
-sys.stdout = sys.__stdout__
 print('done', flush=True)
 
 # data read home directory, this differs on some of our computers
 # data_read_home = "include/data/"          # |--> for Pieter-Jan and Siegfried
-data_read_home = "../data/"                 # |--> for Giel
-running_model = None
+data_read_home = "../data/"  # |--> for Giel
 
-
-def import_model(file_path):
-    print('importing model... ', end='', flush=True)
-    sys.stdout = text_trap
-    global running_model
-    running_model = nw.import_network(file_path)
-    sys.stdout = sys.__stdout__
-    print('done')
-    print(running_model.layers[0].input_shape)
-    print(running_model.layers[len(running_model.layers) - 1].output_shape)
-
-
-def export_model(file_path):
-    nw.export_network(file_path, running_model)
-
-"""
 # %% load data
 print("loading 'caption_features.npz'... ", end='', flush=True)
 df_captions = sparse.load_npz(data_read_home + "caption_features.npz")
@@ -58,7 +36,7 @@ df_image = pd.read_csv(data_read_home + "image_features.csv",
 print("done", flush=True)
 
 # %% subset captions and image to start with few examples
-num_samples = 2000
+num_samples = 5000
 X_captions_subset = df_captions[0:num_samples, :][::5].todense().astype(float)
 y_image_subset = df_image.iloc[0:int(num_samples / 5), :].values
 
@@ -74,9 +52,9 @@ print(f'Size validation X: {X_val.shape}, validation y labels {y_val.shape}')
 
 model = Sequential()
 model.add(Dense(32, activation='relu', input_dim=X_train.shape[1]))
-model.add(Dropout(0.1))
-model.add(Dense(1024, activation='relu'))
-model.add(Dropout(0.05))
+# model.add(Dropout(0.1))
+model.add(Dense(4096, activation='relu'))
+# model.add(Dropout(0.05))
 model.add(Dense(2048, activation='linear'))
 
 model.summary()
@@ -84,9 +62,9 @@ model.summary()
 # %%
 
 # play with these parameters and see what works
-batch_size = 126
+batch_size = 512
 epochs = 100
-learning_rate = 5e-2
+learning_rate = 5e-3
 
 # reduce learning rate when no improvement are made
 optim = optimizers.Adam(lr=learning_rate, beta_1=0.90, beta_2=0.999, epsilon=None, decay=1e-6, amsgrad=False)
@@ -145,7 +123,7 @@ predictions_val = model.predict(X_val)
 
 # %% TODO: 1) Make functins that checks for each predictions which images are closest (rank them)
 
-"""
+
 def rank_images(true_label, predictions, scoring_function='mse'):
     """
 
@@ -154,7 +132,7 @@ def rank_images(true_label, predictions, scoring_function='mse'):
     :param scoring_function:
     :return:
     """
-"""
+
     ranking = {}
     for i in range(len(true_label)):
         scores_ = {}
@@ -167,10 +145,10 @@ def rank_images(true_label, predictions, scoring_function='mse'):
             else:
                 print("metric not available, available metrics include mse and cosine")
             scores_[true_label[j, 0]] = score
+        # save id and scores in ascending (score) order
         ranking[true_label[i, 0]] = OrderedDict(sorted(scores_.items(), key=lambda x: x[1]))
     return ranking
 
 
 # %%
 out = rank_images(true_label=y_val, predictions=predictions_val, scoring_function='cosine')
-"""
