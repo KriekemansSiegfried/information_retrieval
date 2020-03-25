@@ -1,5 +1,5 @@
+print('performing imports... ', end='', flush=True)
 from collections import OrderedDict
-
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -13,14 +13,24 @@ from tensorflow.keras.callbacks import ReduceLROnPlateau
 from tensorflow.keras.layers import Dense, Dropout
 from tensorflow.keras.models import Sequential
 
+print('done', flush=True)
+
+# data read home directory, this differs on some of our computers
+# data_read_home = "include/data/"          # |--> for Pieter-Jan and Siegfried
+data_read_home = "../data/"  # |--> for Giel
+
 # %% load data
-df_captions = sparse.load_npz('include/data/caption_features.npz')
+print("loading 'caption_features.npz'... ", end='', flush=True)
+df_captions = sparse.load_npz(data_read_home + "caption_features.npz")
+print("done", flush=True)
 # if you want to go to the uncompressed format
 # df_captions_uncomp = df_captions.todense()
 
 # images (normal format) (this is in pandas dataframe format) (31782, 2049)
-df_image = pd.read_csv("include/data/image_features.csv",
+print("loading 'image_features.csv'... ", end='', flush=True)
+df_image = pd.read_csv(data_read_home + "image_features.csv",
                        sep=" ", header=None)
+print("done", flush=True)
 
 # %% subset captions and image to start with few examples
 num_samples = 2000
@@ -69,7 +79,7 @@ history = model.fit(X_train, y_train[:, 1:].astype(float),  # skip first column 
                     validation_data=(X_val, y_val[:, 1:].astype(float)),
                     shuffle=True,
                     callbacks=callbacks)
-
+model.save(data_read_home + 'simple_model.h5')
 # Score trained model (note that validation loss is actually the same as the mse
 scores = model.evaluate(X_val, y_val[:, 1:].astype(float), verbose=1)
 print('Validation loss:', scores[0])
@@ -106,6 +116,7 @@ plt.show()
 
 # %% make predictions
 predictions_val = model.predict(X_val)
+
 
 # %% TODO: 1) Make functins that checks for each predictions which images are closest (rank them)
 
