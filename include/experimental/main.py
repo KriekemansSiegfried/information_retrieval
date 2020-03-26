@@ -61,7 +61,6 @@ print('Vocabulary Size: %d' % len(vocabulary))
 # print('Loaded %d' % (len(descriptions)))
 
 # %% split cleaned description in training/validation/test set
-
 train_dic, val_dic, test_dic = split_data.train_val_test_set_desc(descriptions,
                                                                   train_idx, val_idx, test_idx)
 

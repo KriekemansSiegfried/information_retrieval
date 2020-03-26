@@ -35,7 +35,7 @@ def train_val_test_set_desc(dic, train_idx, val_idx, test_idx, verbose=True):
     for key, value in dic.items():
 
         if verbose:
-            print_progress_bar(i=counter, max=n)
+            print_progress_bar(i=counter, maximum=n)
         if key in train_idx:
             train_dic[key] = value
         elif key in val_idx:
@@ -47,8 +47,9 @@ def train_val_test_set_desc(dic, train_idx, val_idx, test_idx, verbose=True):
         counter += 1
 
     if verbose:
+        print("\n")
         print(f'length training set:{len(train_dic)}')
-        print(f'length training set:{len(val_dic)}')
-        print(f'length training set:{len(test_idx)}')
+        print(f'length validation set:{len(val_dic)}')
+        print(f'length test set:{len(test_idx)}')
 
     return train_dic, val_dic, test_dic

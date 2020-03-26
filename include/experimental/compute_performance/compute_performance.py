@@ -46,6 +46,7 @@ def rank_images(true_label, predictions, scoring_function='mse', k=10, verbose=T
             scores_.append((true_label[j, 0], score))
         # save lowest k id's and scores in ascending (score) order
         ranking[true_label[i, 0]] = (sorted(scores_, key=lambda x: x[1]))[0:k]
+    print("\n")
     return ranking
 
 
