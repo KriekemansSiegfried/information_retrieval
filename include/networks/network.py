@@ -55,10 +55,10 @@ def get_network_siamese(caption_feature_size, image_feature_size, embedding_size
     return model
 
 
-def import_model(file_path):
+def import_network(file_path):
     model = load_model(file_path)
     return model
 
 
-def export_model(file_path, model):
+def export_network(file_path, model):
     model.save(file_path)
