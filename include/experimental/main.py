@@ -1,170 +1,182 @@
-import re
-import string
-
-from scipy.sparse import save_npz
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import seaborn as sns
 from sklearn.feature_extraction.text import CountVectorizer
 
+sns.set()
+# keras
+from tensorflow.keras import optimizers
+from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
+from tensorflow.keras.callbacks import ReduceLROnPlateau
+from tensorflow.keras.layers import Dense
+from tensorflow.keras.models import Sequential
 
-# from nltk.corpus import stopwords
+# own functions
+from include.experimental.clean_data import clean_data
+from include.experimental.split_data import split_data
+from include.experimental.compute_performance import compute_performance
 
-# %% load doc into memory
-def load_doc(filename, encoding=None):
-    """
+# %% load data
+# data read home directory, this differs on some of our computers
+data_read_home = "include/data/"  # |--> for Pieter-Jan and Siegfried
+# data_read_home = "../data/"  # |--> for Giel
 
-    :param filename:
-    :param encoding:
-    :return:
-    """
-    # open the file as read only
-    file = open(filename, 'r', encoding=encoding)
-    # read all text
-    text = file.read()
-    # close the file
-    file.close()
-    return text
+# read in train train/validation/test indices
+# split according to https://github.com/BryanPlummer/flickr30k_entities
+train_idx = pd.read_csv(data_read_home + 'train_idx.txt', dtype=object, header=None).values.flatten()
+val_idx = pd.read_csv(data_read_home + 'val_idx.txt', dtype=object, header=None).values.flatten()
+test_idx = pd.read_csv(data_read_home + 'test_idx.txt', dtype=object, header=None).values.flatten()
 
+# split image data in train/validation/test set
+# load first the whole image dataset in
+df_image = pd.read_csv(data_read_home + "image_features.csv", sep=" ", header=None)
+# remove .jpg from first row
+df_image.iloc[:, 0] = df_image.iloc[:, 0].str.split('.').str[0]
+# subset image data based idx
+df_image_train = df_image[df_image.iloc[:, 0].isin(train_idx.tolist())]
+df_image_val = df_image[df_image.iloc[:, 0].isin(val_idx.tolist())]
+df_image_test = df_image[df_image.iloc[:, 0].isin(test_idx.tolist())]
 
-# extract descriptions for images
-def load_descriptions(doc, first_description_only=True, n_desc=None):
-    """
+print(f"shape training data image: {df_image_train.shape}")
+print(f"shape validation data image: {df_image_val.shape}")
+print(f"shape test data image: {df_image_test.shape}")
 
-    :param doc:
-    :param first_description_only:
-    :param n_desc:
-    :return:
-    """
-    mapping = dict()
-    # process lines
-    i = 0
-    for line in doc.split('\n'):
-        i += 1
-
-        # load only part of the data
-        if n_desc is not None and i == n_desc:
-            break
-        # split line by white space
-        tokens = line.split()
-        if len(line) < 2:
-            continue
-        # take the first token as the image id, the rest as the description
-        image_id, image_desc = tokens[0], tokens[1:]
-        # remove filename from image id
-        image_id = image_id.split('.')[0]
-        # convert description tokens back to string
-        image_desc = ' '.join(image_desc)
-        # store the first description for each image only
-        if first_description_only:
-            if image_id not in mapping:
-                mapping[image_id] = image_desc
-
-        # store all descriptions for each image in one big caption
-        else:
-            if image_id not in mapping:
-                mapping[image_id] = image_desc
-            else:
-                # add image description with a space added
-                mapping[image_id] += image_desc.rjust(len(image_id) + 2)
-
-    return mapping
-
-
-# clean description text
-def clean_descriptions(descriptions, min_word_length=3):
-    """
-
-    :param descriptions:
-    :param min_word_length:
-    :return:
-    """
-
-    # prepare regex for char filtering
-    re_punc = re.compile('[%s]' % re.escape(string.punctuation))
-    for key, desc in descriptions.items():
-        # tokenize
-        desc = desc.split()
-        # convert to lower case
-        desc = [word.lower() for word in desc]
-        # remove punctuation from each word
-        desc = [re_punc.sub('', w) for w in desc]
-        # remove hanging 's' and 'a'
-        desc = [word for word in desc if len(word) > min_word_length]
-        # only store unique words
-        unique_desc = []
-        for word in desc:
-            if word not in unique_desc:
-                unique_desc.append(word)
-        # store as string
-        descriptions[key] = ' '.join(unique_desc)
-
-
-# save descriptions to file, one per line
-def save_doc(descriptions, filename):
-    """
-
-    :param descriptions:
-    :param filename:
-    :return:
-    """
-    lines = list()
-    for key, desc in descriptions.items():
-        lines.append(key + ' ' + desc)
-    data = '\n'.join(lines)
-    file = open(filename, 'w')
-    file.write(data)
-    file.close()
-
-
-# load clean descriptions into memory
-def load_clean_descriptions(filename):
-    """
-
-    :param filename:
-    :return:
-    """
-    doc = load_doc(filename)
-    descriptions = dict()
-    for line in doc.split('\n'):
-        # split line by white space
-        tokens = line.split()
-        # split id from description
-        image_id, image_desc = tokens[0], tokens[1:]
-        # store
-        descriptions[image_id] = ' '.join(image_desc)
-    return descriptions
 # %%
-filename = '../data/results_20130124.token'
-# load descriptions
-doc = load_doc(filename, encoding="utf8")
+# read in caption data
+doc = clean_data.load_doc(data_read_home + '/results_20130124.token', encoding="utf8")
 # parse descriptions (using all descriptions)
-descriptions = load_descriptions(doc, first_description_only=False)
+descriptions = clean_data.load_descriptions(doc, first_description_only=False)
 print('Loaded: %d ' % len(descriptions))
-# %%
+
 # clean descriptions
-clean_descriptions(descriptions, min_word_length=3)
+clean_data.clean_descriptions(descriptions, min_word_length=3)
 # summarize vocabulary (still additional cleaning needed)
 all_tokens = ' '.join(descriptions.values()).split()
 vocabulary = set(all_tokens)
 print('Vocabulary Size: %d' % len(vocabulary))
-# save cleaned descriptions
-save_doc(descriptions, '../data/descriptions.txt')
+# save cleaned descriptions (
+# save_doc(descriptions, data_read_home+'/descriptions.txt')
+# descriptions = load_clean_descriptions('include/data/descriptions.txt')
+# print('Loaded %d' % (len(descriptions)))
 
-# %%
-descriptions = load_clean_descriptions('../data/descriptions.txt')
-print('Loaded %d' % (len(descriptions)))
-#print(descriptions.values())
-# %%
+# %% split cleaned description in training/validation/test set
 
+train_dic, val_dic, test_dic = split_data.train_val_test_set_desc(descriptions,
+                                                                  train_idx, val_idx, test_idx)
+
+#%%
 # !! Read the API of scikit learn !!
 # https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html
 
-vectorizer = CountVectorizer(stop_words='english', min_df=10, max_df=100)
-sparse_matrix = vectorizer.fit_transform(descriptions.values())
+vectorizer = CountVectorizer(stop_words='english', min_df=1, max_df=100)
+# fit on training data (descriptions)
+vectorizer.fit(train_dic.values())
+print(len(vectorizer.vocabulary_))
+# transform descriptions (based on the fit from the training data)
+train_captions = vectorizer.transform(train_dic.values())
+val_captions = vectorizer.transform(val_dic.values())
+test_captions = vectorizer.transform(test_dic.values())
 
-# !! to transform new data just call vectorizer.transform(NEW_DATA)
-# !! you don't need to save anything, you only need this fit transfrom object vectorizer
-# have a look at the scikit learn api
-print(vectorizer.vocabulary_)
-print(sparse_matrix.shape)
+print(f"Dimension training caption: {train_captions.shape}")
+print(f"Dimension validation caption: {val_captions.shape}")
+print(f"Dimension test caption: {test_captions.shape}")
 
-# save as sparse matrix
-save_npz("../data/caption_features.npz", sparse_matrix)
+# %% subset captions and image to start with few examples set everything to maximum
+
+# training
+num_samples_train = 1000  # max 29783
+X_train = train_captions[0:num_samples_train, :].todense()
+y_train = df_image_train.iloc[0:num_samples_train, :].values
+# validation
+num_samples_val = 200  # max 1000
+X_val = val_captions[0:num_samples_val, :].todense()
+y_val = df_image_val.iloc[0:num_samples_val, :].values
+
+# test
+num_samples_test = 1000  # max 1000
+X_test = test_captions[0:num_samples_test, :].todense()
+y_test = df_image_test.iloc[0:num_samples_test, :].values
+
+print(f'Size train X: {X_train.shape}, train y labels {y_train.shape}')
+print(f'Size validation X: {X_val.shape}, validation y labels {y_val.shape}')
+print(f'Size test X: {X_test.shape}, validation y labels {y_test.shape}')
+
+# %% build model
+model = Sequential()
+model.add(Dense(32, activation='relu', input_dim=X_train.shape[1]))
+# model.add(Dropout(0.1))
+model.add(Dense(3096, activation='relu'))
+# model.add(Dropout(0.05))
+model.add(Dense(2048, activation='linear'))
+
+model.summary()
+
+# %%
+
+# play with these parameters and see what works
+batch_size = 256
+epochs = 100
+learning_rate = 5e-3
+
+# reduce learning rate when no improvement are made
+optim = optimizers.Adam(lr=learning_rate, beta_1=0.90, beta_2=0.999, epsilon=None, decay=1e-6, amsgrad=False)
+model.compile(loss='mse', optimizer=optim, metrics=['mse'])
+
+reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.2,
+                              patience=10, min_lr=0.001)
+
+filepath = "simple_model.hdf5"
+callbacks = [EarlyStopping(monitor='val_loss', patience=20),
+             ModelCheckpoint(filepath=filepath, monitor='val_loss',
+                             verbose=1, save_best_only=True, mode='max'), reduce_lr]
+
+history = model.fit(X_train, y_train[:, 1:].astype(float),  # skip first column since it contains the image_id
+                    batch_size=batch_size,
+                    epochs=epochs,
+                    validation_data=(X_val, y_val[:, 1:].astype(float)),
+                    shuffle=True,
+                    callbacks=callbacks)
+
+# Score trained model (note that validation loss is actually the same as the mse
+scores = model.evaluate(X_val, y_val[:, 1:].astype(float), verbose=1)
+print('Validation loss:', scores[0])
+print('Validation mse:', scores[1])
+
+# %% score trained model and visualize
+
+train_scores = model.evaluate(X_train, y_train[:, 1:].astype(float), verbose=1)
+val_scores = model.evaluate(X_val, y_val[:, 1:].astype(float), verbose=1)
+
+print('Training loss:', train_scores[0], ', training mse: ', train_scores[1])
+print('Validation loss:', val_scores[0], ', validation mse: ', val_scores[1])
+
+real_epochs = len(history.history['mse'])
+
+plt.figure(figsize=(12, 6))
+plt.subplot(1, 2, 1)
+plt.plot(np.arange(1, real_epochs + 1, 1), history.history['mse'], 'g-', label='training')
+plt.plot(np.arange(1, real_epochs + 1, 1), history.history['val_mse'], 'r-', label='validation')
+plt.xlabel("Epochs")
+plt.ylabel("Mse")
+plt.ylim([0, 0.4])
+plt.legend()
+
+plt.subplot(1, 2, 2)
+plt.plot(np.arange(1, real_epochs + 1, 1), history.history['loss'], 'g-', label='training')
+plt.plot(np.arange(1, real_epochs + 1, 1), history.history['val_loss'], 'r-', label='validation')
+plt.xlabel("Epochs")
+plt.ylabel("Loss")
+plt.ylim([0, 0.4])
+plt.legend()
+
+plt.show()
+
+# %% make predictions
+predictions = model.predict(X_test)
+
+# compute_performance
+out = compute_performance.rank_images(true_label=y_test, predictions=predictions, scoring_function='mse', k=10,
+                                      verbose=True)
+average_precision = compute_performance.comput_average_precision(out)
+average_precision.mean()
