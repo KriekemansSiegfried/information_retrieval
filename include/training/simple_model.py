@@ -1,5 +1,6 @@
 print('performing imports... ', end='', flush=True)
 from collections import OrderedDict
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -19,8 +20,8 @@ from tensorflow.keras.models import Sequential
 print('done', flush=True)
 
 # data read home directory, this differs on some of our computers
-# data_read_home = "include/data/"          # |--> for Pieter-Jan and Siegfried
-data_read_home = "../data/"  # |--> for Giel
+data_read_home = "include/data/"  # |--> for Pieter-Jan and Siegfried
+# data_read_home = "../data/"  # |--> for Giel
 
 # %% load data
 print("loading 'caption_features.npz'... ", end='', flush=True)
@@ -36,12 +37,12 @@ df_image = pd.read_csv(data_read_home + "image_features.csv",
 print("done", flush=True)
 
 # %% subset captions and image to start with few examples
-num_samples = 5000
-X_captions_subset = df_captions[0:num_samples, :][::5].todense().astype(float)
-y_image_subset = df_image.iloc[0:int(num_samples / 5), :].values
+num_samples = 1000
+X_captions_subset = df_captions[0:num_samples, :].todense().astype(float)
+y_image_subset = df_image.iloc[0:int(num_samples), :].values
 
 # make train and validation set (test set is for later once we have found good parameters)
-val_size = round(num_samples / 5 * 0.25)
+val_size = round(num_samples * 0.25)
 X_train, X_val, y_train, y_val = train_test_split(X_captions_subset,
                                                   y_image_subset, test_size=val_size)
 
@@ -51,9 +52,9 @@ print(f'Size validation X: {X_val.shape}, validation y labels {y_val.shape}')
 # %% define model architecture (play with this)
 
 model = Sequential()
-model.add(Dense(32, activation='relu', input_dim=X_train.shape[1]))
+model.add(Dense(128, activation='relu', input_dim=X_train.shape[1]))
 # model.add(Dropout(0.1))
-model.add(Dense(4096, activation='relu'))
+model.add(Dense(512, activation='relu'))
 # model.add(Dropout(0.05))
 model.add(Dense(2048, activation='linear'))
 
@@ -62,9 +63,9 @@ model.summary()
 # %%
 
 # play with these parameters and see what works
-batch_size = 512
+batch_size = 256
 epochs = 100
-learning_rate = 5e-3
+learning_rate = 5e-4
 
 # reduce learning rate when no improvement are made
 optim = optimizers.Adam(lr=learning_rate, beta_1=0.90, beta_2=0.999, epsilon=None, decay=1e-6, amsgrad=False)
