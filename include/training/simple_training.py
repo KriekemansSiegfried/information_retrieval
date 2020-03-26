@@ -98,6 +98,22 @@ def default_data_load():
     load_data(caption_path, feature_path)
 
 
+# %% subset captions and image to start with few examples
+num_samples = 2000
+X_captions_subset = df_captions[0:num_samples, :][::5].todense().astype(float)
+y_image_subset = df_image.iloc[0:int(num_samples / 5), :].values
+
+# make train and validation set (test set is for later once we have found good parameters)
+val_size = round(num_samples / 5 * 0.25)
+X_train, X_val, y_train, y_val = train_test_split(X_captions_subset,
+                                                  y_image_subset, test_size=val_size)
+
+print(f'Size train X: {X_train.shape}, train y labels {y_train.shape}')
+print(f'Size validation X: {X_val.shape}, validation y labels {y_val.shape}')
+
+# %% define model architecture (play with this)
+
+
 """---------------------------------concerning current model/the model used------------------------------------------"""
 
 
@@ -147,19 +163,8 @@ def get_model_info():
     global running_model
     running_model.summary()
 
-"""
-# %% subset captions and image to start with few examples
-num_samples = 2000
-X_captions_subset = df_captions[0:num_samples, :][::5].todense().astype(float)
-y_image_subset = df_image.iloc[0:int(num_samples / 5), :].values
 
-# make train and validation set (test set is for later once we have found good parameters)
-val_size = round(num_samples / 5 * 0.25)
-X_train, X_val, y_train, y_val = train_test_split(X_captions_subset,
-                                                  y_image_subset, test_size=val_size)
-
-print(f'Size train X: {X_train.shape}, train y labels {y_train.shape}')
-print(f'Size validation X: {X_val.shape}, validation y labels {y_val.shape}')
+def create_new_model():
 
 # %% define model architecture (play with this)
 
@@ -171,6 +176,9 @@ model.add(Dropout(0.05))
 model.add(Dense(2048, activation='linear'))
 
 model.summary()
+
+
+
 
 # %%
 
@@ -236,7 +244,7 @@ predictions_val = model.predict(X_val)
 
 # %% TODO: 1) Make functins that checks for each predictions which images are closest (rank them)
 
-"""
+
 def rank_images(true_label, predictions, scoring_function='mse'):
     """
 

@@ -27,6 +27,7 @@ def custom_loss():
 
     return custom_distance_loss
 
+
 def get_network(input_size):
     model = Sequential()
     model.add(Dense(input_size, activation='relu'))

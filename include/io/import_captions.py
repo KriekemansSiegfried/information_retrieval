@@ -16,6 +16,7 @@ def convert_to_caption(line):
     tokens = second_split[1].split(" ")
     return Caption(image_id, caption_id, tokens)
 
+
 def import_captions(filename):
     """
 

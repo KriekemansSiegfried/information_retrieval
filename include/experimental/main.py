@@ -132,7 +132,7 @@ def load_clean_descriptions(filename):
         descriptions[image_id] = ' '.join(image_desc)
     return descriptions
 # %%
-filename = 'include/data/results_20130124.token'
+filename = '../data/results_20130124.token'
 # load descriptions
 doc = load_doc(filename, encoding="utf8")
 # parse descriptions (using all descriptions)
@@ -146,12 +146,12 @@ all_tokens = ' '.join(descriptions.values()).split()
 vocabulary = set(all_tokens)
 print('Vocabulary Size: %d' % len(vocabulary))
 # save cleaned descriptions
-save_doc(descriptions, 'include/data/descriptions.txt')
+save_doc(descriptions, '../data/descriptions.txt')
 
 # %%
-descriptions = load_clean_descriptions('include/data/descriptions.txt')
+descriptions = load_clean_descriptions('../data/descriptions.txt')
 print('Loaded %d' % (len(descriptions)))
-
+#print(descriptions.values())
 # %%
 
 # !! Read the API of scikit learn !!
@@ -167,4 +167,4 @@ print(vectorizer.vocabulary_)
 print(sparse_matrix.shape)
 
 # save as sparse matrix
-save_npz("include/data/caption_features.npz", sparse_matrix)
+save_npz("../data/caption_features.npz", sparse_matrix)
