@@ -1,7 +1,8 @@
+import joblib
 from nltk.corpus import stopwords
 from keras.preprocessing.text import Tokenizer
 import scipy.sparse as sparse
-import numpy as np
+import pickle
 from include.bow import dictionary, frequent_words as fw, one_hot
 from include.io import import_captions
 
@@ -31,43 +32,42 @@ stop_words = set(stopwords.words('english'))
 a, b = dictionary.prune_dict(word_dict=bow_dict, stopwords=stop_words, min_word_len=3, min_freq=0, max_freq=1000)
 bow_dict_pruned, removed_words = a, b
 
+# create vectorizer
 tokens = bow_dict_pruned.keys()
-print(tokens)
-
 vectorizer = CountVectorizer(vocabulary=set(tokens))
-print(vectorizer.vocabulary)
 
+# save vectorizer to .sav file
+filename = 'include/data/vectorizer_model.sav'
+joblib.dump(vectorizer, filename)
 
 
 # testing
-test_string = "Two young guys with shaggy hair look at their hands while hanging out in the yard"
-vector = vectorizer.transform([test_string])
-# summarize encoded vector
-print(vector.shape)
-print(type(vector))
-print(vector.toarray())
+loaded_model = joblib.load(filename)
+str_0 = "A girl is on rollerskates talking on her cellphone standing in a parking lot"
+str_1 = "Two young guys with shaggy hair look at their hands while hanging out in the yard"
+str_2 = "A child in a pink dress is climbing up a set of stairs in an entry way"
+str_3 = "An asian man wearing a black suit stands near a dark-haired woman and a brown-haired woman"
+str_4 = "A man with reflective safety clothes and ear protection drives a John Deere tractor on a road"
+str_5 = "A young woman with dark hair and wearing glasses is putting white powder on a cake using a sifter"
+str_6 = "A person in gray stands alone on a structure outdoors in the dark"
+str_7 = "Man with a lit cigarette in mouth , yellow baseball cap turned backwards , and yellow shirt " \
+        "over an orange polo shirt , helping another man with carrying slabs of concrete"
+str_8 = "Three construction workers working on digging on a hole , while the supervisor looks at them"
+str_9 = "Two workers in reflective vests walk in front of a wall painted with the image of a mannequin in a " \
+        "reflective vest with rubber boots and a trowel"
 
 
+test_strings = [str_0, str_1, str_2, str_3, str_4, str_5, str_6, str_7, str_8, str_9]
+i = 0
+for string in test_strings:
+    v1 = vectorizer.transform([string])
+    v2 = loaded_model.transform([string])
+    if (v1.toarray() == v2.toarray()).all():
+        print("test" + str(i) + " was successful")
+    else:
+        print("test" + str(i) + " failed")
+    i = i+1
 
-
-# tokenize and build vocab
-# summarize
-
-"""
-tokenizer = Tokenizer(num_words=len(tokens)+1)
-tokenizer.fit_on_texts(tokens)
-num_words = len(tokenizer.word_index) + 1
-print(num_words)
-print(tokenizer)
-
-
-test_string = 'Two young guys with shaggy hair look at their hands while hanging out in the yard'
-caption = captions[0]
-caption.features = sparse.csr_matrix(one_hot.convert_to_bow(caption, tokens), dtype=np.int8)
-
-sequence = tokenizer.texts_to_sequences(test_string)
-print(sequence)
-"""
 
 
 
