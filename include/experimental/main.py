@@ -1,11 +1,22 @@
 import re
 import string
 
+from scipy.sparse import save_npz
+from sklearn.feature_extraction.text import CountVectorizer
+
+
+# from nltk.corpus import stopwords
 
 # %% load doc into memory
-def load_doc(filename):
+def load_doc(filename, encoding=None):
+    """
+
+    :param filename:
+    :param encoding:
+    :return:
+    """
     # open the file as read only
-    file = open(filename, 'r', encoding="utf8")
+    file = open(filename, 'r', encoding=encoding)
     # read all text
     text = file.read()
     # close the file
@@ -14,10 +25,23 @@ def load_doc(filename):
 
 
 # extract descriptions for images
-def load_descriptions(doc, first_description_only=True):
+def load_descriptions(doc, first_description_only=True, n_desc=None):
+    """
+
+    :param doc:
+    :param first_description_only:
+    :param n_desc:
+    :return:
+    """
     mapping = dict()
     # process lines
+    i = 0
     for line in doc.split('\n'):
+        i += 1
+
+        # load only part of the data
+        if n_desc is not None and i == n_desc:
+            break
         # split line by white space
         tokens = line.split()
         if len(line) < 2:
@@ -33,19 +57,26 @@ def load_descriptions(doc, first_description_only=True):
             if image_id not in mapping:
                 mapping[image_id] = image_desc
 
-        # store all descriptions for each image
+        # store all descriptions for each image in one big caption
         else:
             if image_id not in mapping:
                 mapping[image_id] = image_desc
             else:
                 # add image description with a space added
-                mapping[image_id] += image_desc.rjust(len(image_id) + 1)
+                mapping[image_id] += image_desc.rjust(len(image_id) + 2)
 
     return mapping
 
 
 # clean description text
-def clean_descriptions(descriptions):
+def clean_descriptions(descriptions, min_word_length=3):
+    """
+
+    :param descriptions:
+    :param min_word_length:
+    :return:
+    """
+
     # prepare regex for char filtering
     re_punc = re.compile('[%s]' % re.escape(string.punctuation))
     for key, desc in descriptions.items():
@@ -56,7 +87,7 @@ def clean_descriptions(descriptions):
         # remove punctuation from each word
         desc = [re_punc.sub('', w) for w in desc]
         # remove hanging 's' and 'a'
-        desc = [word for word in desc if len(word) > 1]
+        desc = [word for word in desc if len(word) > min_word_length]
         # only store unique words
         unique_desc = []
         for word in desc:
@@ -68,6 +99,12 @@ def clean_descriptions(descriptions):
 
 # save descriptions to file, one per line
 def save_doc(descriptions, filename):
+    """
+
+    :param descriptions:
+    :param filename:
+    :return:
+    """
     lines = list()
     for key, desc in descriptions.items():
         lines.append(key + ' ' + desc)
@@ -77,19 +114,57 @@ def save_doc(descriptions, filename):
     file.close()
 
 
+# load clean descriptions into memory
+def load_clean_descriptions(filename):
+    """
+
+    :param filename:
+    :return:
+    """
+    doc = load_doc(filename)
+    descriptions = dict()
+    for line in doc.split('\n'):
+        # split line by white space
+        tokens = line.split()
+        # split id from description
+        image_id, image_desc = tokens[0], tokens[1:]
+        # store
+        descriptions[image_id] = ' '.join(image_desc)
+    return descriptions
 # %%
 filename = 'include/data/results_20130124.token'
 # load descriptions
-doc = load_doc(filename)
+doc = load_doc(filename, encoding="utf8")
 # parse descriptions (using all descriptions)
 descriptions = load_descriptions(doc, first_description_only=False)
 print('Loaded: %d ' % len(descriptions))
 # %%
 # clean descriptions
-clean_descriptions(descriptions)
-# summarize vocabulary (still additonal cleaning needed)
+clean_descriptions(descriptions, min_word_length=3)
+# summarize vocabulary (still additional cleaning needed)
 all_tokens = ' '.join(descriptions.values()).split()
 vocabulary = set(all_tokens)
 print('Vocabulary Size: %d' % len(vocabulary))
-# save descriptions
+# save cleaned descriptions
 save_doc(descriptions, 'include/data/descriptions.txt')
+
+# %%
+descriptions = load_clean_descriptions('include/data/descriptions.txt')
+print('Loaded %d' % (len(descriptions)))
+
+# %%
+
+# !! Read the API of scikit learn !!
+# https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html
+
+vectorizer = CountVectorizer(stop_words='english', min_df=10, max_df=100)
+sparse_matrix = vectorizer.fit_transform(descriptions.values())
+
+# !! to transform new data just call vectorizer.transform(NEW_DATA)
+# !! you don't need to save anything, you only need this fit transfrom object vectorizer
+# have a look at the scikit learn api
+print(vectorizer.vocabulary_)
+print(sparse_matrix.shape)
+
+# save as sparse matrix
+save_npz("include/data/caption_features.npz", sparse_matrix)
