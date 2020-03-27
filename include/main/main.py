@@ -15,7 +15,8 @@ from include.io import import_captions, import_images
 # %matplotlib qt5 (for interactive plotting: run in the python console)
 from include.networks.network import get_network_triplet_loss
 # to quickly reload functions
-from include.training.dataset import convert_to_triplet_dataset
+from include.analysis.data_analysis import convert_to_triplet_dataset
+#from include.training.dataset import convert_to_triplet_dataset
 from include.util.pairs import get_pairs_images, make_dict
 
 sns.set()

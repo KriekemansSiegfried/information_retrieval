@@ -3,8 +3,8 @@ from numpy.linalg import norm
 
 from include.bow import dictionary, one_hot
 from include.io import import_captions, import_images
-from include.triplet_loss.features import get_caption_embedding, get_image_embedding
-from include.triplet_loss.load_model import load_submodels
+from include.analysis.triplet_loss.features import get_caption_embedding, get_image_embedding
+from include.analysis.triplet_loss.load_model import load_submodels
 
 caption_filename = 'include/data/results_20130124.token'
 image_filename = 'include/data/image_features.csv'
