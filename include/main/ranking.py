@@ -1,8 +1,24 @@
+import sys
 import numpy as np
 from numpy.linalg import norm
+from scipy import spatial
+
+def print_progress_bar(i, maximum, post_text="Finish", n_bar=10):
+    """
+
+    :param i:
+    :param maximum:
+    :param post_text:
+    :param n_bar: size of progress bar (default 10)
+    :return:
+    """
+    j = i / maximum
+    sys.stdout.write('\r')
+    sys.stdout.write(f"[{'=' * int(n_bar * j):{n_bar}s}] {int(100 * j)}%  {post_text}")
+    sys.stdout.flush()
 
 
-def rank_images(caption_features, image_features, id_included=False, k=10):
+def rank_efficient(caption_features, image_features, id_included=False, k=10):
     id_list = None
 
     if id_included:
@@ -60,6 +76,36 @@ def rank_images(caption_features, image_features, id_included=False, k=10):
     ranked = cos_sim[cos_sim[:, 1].argsort()]
     return ranked[:, 0]
 """
+
+def rank_images(true_label, predictions, scoring_function='mse', k=10, verbose=True):
+    """
+
+    :param true_label:
+    :param predictions:
+    :param scoring_function:
+    :return:
+    """
+
+    ranking = {}
+    n = len(predictions)
+    for i in range(n):
+        if verbose:
+            print_progress_bar(i=i, maximum=n)
+        scores_ = []
+        for j in range(len(true_label)):
+            if scoring_function == 'cosine':
+                score = spatial.distance.cosine(predictions[i, :], true_label[j, 1:].astype(float))
+            elif scoring_function == 'mse':
+                # element wise mse
+                score = ((predictions[i, :] - true_label[j, 1:].astype(float)) ** 2).mean(axis=None)
+            else:
+                print("metric not available, available metrics include mse and cosine")
+            scores_.append((true_label[j, 0], score))
+        # save lowest k id's and scores in ascending (score) order
+        ranking["search_term_"+str(i)] = (sorted(scores_, key=lambda x: x[1]))[0:k]
+    print("\n")
+    return ranking
+
 
 def run_tests():
     cap_feature1 = np.array([0.9, 0.02, 0.05])

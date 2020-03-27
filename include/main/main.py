@@ -8,7 +8,9 @@ import seaborn as sns
 from nltk.corpus import stopwords
 
 # custom defined functions
+from numpy.linalg import norm
 from tensorflow_core.python.keras.callbacks import EarlyStopping
+from tensorflow_core.python.keras.models import Model
 
 from include.bow import dictionary, one_hot
 from include.io import import_captions, import_images, output_captions
@@ -96,10 +98,44 @@ print('creating dataset with labels')
 dataset, labels = convert_to_triplet_dataset(pairs)
 print('dataset created')
 print('network loading')
-network = get_network_triplet_loss(caption_feature_size,len(images[0].features), 256)
+network = get_network_triplet_loss(caption_feature_size, len(images[0].features), 512)
 print('network loaded')
-network.fit(dataset, labels, epochs=10, use_multiprocessing=True, callbacks=[EarlyStopping(monitor='loss', patience=20)])
+network.fit(dataset, labels, epochs=10, use_multiprocessing=True, batch_size=32,
+            callbacks=[EarlyStopping(monitor='loss', patience=5)])
+
+caption_model = Model(inputs=network.get_layer('input_pos').input,
+                      outputs=network.get_layer('output_pos').output)
+image_model = Model(inputs=network.get_layer('input_image').input, outputs=network.get_layer('output_image').output)
+
+caption_model.summary()
+image_model.summary()
+
 print('network fitted')
+
+print('inp capt -> {}'.format(dataset[1][0].shape))
+caption_feature_pos = caption_model.predict(np.expand_dims(dataset[1][0], axis=0))
+caption_feature_neg = caption_model.predict(np.expand_dims(dataset[0][100], axis=0))
+
+print('caption in pos -> {}'.format(sparse.csr_matrix(dataset[1][0])))
+print('caption in neg -> {}'.format(sparse.csr_matrix(dataset[0][100])))
+
+print('caption feature pos -> {}'.format(caption_feature_pos))
+print('caption feature neg -> {}'.format(caption_feature_neg))
+image_feature = image_model.predict(np.expand_dims(dataset[2][0], axis=0))
+
+
+caption_feature_pos = np.squeeze(caption_feature_pos, axis=0)
+caption_feature_neg = np.squeeze(caption_feature_neg, axis=0)
+image_feature = np.squeeze(image_feature, axis=0)
+
+print('image_feature -> {}'.format(image_feature.shape))
+print('caption_feature neg -> {}'.format(caption_feature_neg.shape))
+print('caption_feature pos -> {}'.format(caption_feature_pos.shape))
+
+distance_pos = norm(np.subtract(image_feature,caption_feature_pos), ord=2)
+distance_neg = norm(np.subtract(image_feature,caption_feature_neg), ord=2)
+
+print('pos dist / neg dist : {} / {}'.format(distance_pos, distance_neg))
 
 # print('features converted')
 #

@@ -9,6 +9,7 @@ from tensorflow_core.python.keras.layers.merge import Concatenate
 from tensorflow_core.python.keras.losses import MeanSquaredError
 from tensorflow_core.python.keras.models import Model, Sequential, load_model
 from tensorflow_core.python.keras.optimizers import Adam
+from tensorflow_core.python.keras.layers.normalization import BatchNormalization
 from tensorflow_core.python.ops.linalg_ops import norm
 
 
@@ -120,51 +121,69 @@ def get_network_siamese_contrastive(caption_size, image_feature_size, embedding_
     return model
 
 
+def get_triplet_loss(margin):
+    def triplet_loss(y_true, y_pred):
+        # y_pred = K.print_tensor(y_pred)
+        length = y_pred.shape.as_list()[-1]
+        negative = y_pred[:, 0:int(length / 3)]
+        positive = y_pred[:, int(length / 3):int(length * 2 / 3)]
+        anchor = y_pred[:, int(length * 2 / 3):int(length)]
+        pos_dist = K.sum(K.square(anchor - positive), axis=1)
+        neg_dist = K.sum(K.square(anchor - negative), axis=1)
 
-def triplet_loss(y_true, y_pred, alpha=0.4):
-    length = y_pred.shape.as_list()[-1]
-    print(
-        'length => {}'.format(length)
-    )
-    negative = y_pred[:, 0:int(length / 3)]
-    positive = y_pred[:, int(length / 3):int(length * 2 / 3)]
-    anchor = y_pred[:, int(length * 2 / 3):int(length)]
+        loss = pos_dist - neg_dist + margin
+        # regularized_loss = K.print_tensor(K.maximum(loss, 0.0))
+        regularized_loss = K.maximum(loss, 0.0)
+        return regularized_loss
 
-    pos_dist = K.sum(K.square(anchor - positive), axis=1)
-    neg_dist = K.sum(K.square(anchor - negative), axis=1)
-
-    loss = pos_dist - neg_dist + alpha
-    regularized_loss = K.maximum(loss, 0.0)
-    print('loss -> {}'.format(regularized_loss))
-    return regularized_loss
+    return triplet_loss
 
 
-def get_network_triplet_loss(caption_size, image_size, embedding_size):
-
+def get_network_triplet_loss(caption_size, image_size, embedding_size, triplet_margin=1000):
     print('caption input size {}'.format(caption_size))
     print('image input size {}'.format(image_size))
     print('embedding size {}'.format(embedding_size))
 
-    def base_model(size):
-        input = Input(shape=(size,))
-        hidden = Dense(512, activation='relu')(input)
-        output = Dense(embedding_size, activation='relu')(hidden)
+    hidden_layer_size = 1024
 
-        return [input, output]
+    # def neg submodel
+    input_neg = Input(name='input_neg', shape=(caption_size,))
+    input_pos = Input(name='input_pos', shape=(caption_size,))
 
-    caption_input_neg, caption_output_neg = base_model(caption_size)
-    caption_input_pos, caption_output_pos = base_model(caption_size)
-    image_input, image_output = base_model(image_size)
+    hidden = Dense(hidden_layer_size, activation='relu')
 
-    concat = Concatenate()([caption_output_neg, caption_output_pos, image_output])
-    model = Model([caption_input_neg, caption_input_pos, image_input], concat)
-    model.compile(loss=triplet_loss, optimizer='adam')
+    hidden_neg = hidden(input_neg)
+    hidden_pos = hidden(input_pos)
+
+    embedding_layer = Dense(embedding_size, activation='relu')
+
+    embedding_neg = embedding_layer(hidden_neg)
+    embedding_pos = embedding_layer(hidden_pos)
+
+    output_neg = BatchNormalization(name='output_neg')(embedding_neg)
+    output_pos = BatchNormalization(name='output_pos')(embedding_pos)
+
+    # def image submodel
+    input_image = Input(name='input_image', shape=(image_size,))
+    hidden_image = Dense(hidden_layer_size, activation='relu')(input_image)
+    embedding_image = Dense(embedding_size, activation='relu')(hidden_image)
+    output_image = BatchNormalization(name='output_image')(embedding_image)
+
+    # caption_output_pos.name = 'caption_pos_embedding'
+    # caption_output_neg.name = 'caption_neg_embedding'
+    # image_output.name = 'image_embedding'
+
+    concat = Concatenate()([output_neg, output_pos, output_image])
+    model = Model([input_neg, input_pos, input_image], concat)
+    model.compile(loss=get_triplet_loss(margin=triplet_margin), optimizer='adam')
     model.summary()
     return model
+
 
 def import_network(file_path):
     model = load_model(file_path)
     return model
+
 
 def export_network(file_path, model):
     model.save(file_path)
