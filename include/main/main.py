@@ -12,7 +12,7 @@ from include.bow import dictionary, one_hot
 from include.io import import_captions, import_images, output_captions
 # style seaborn for plotting
 # %matplotlib qt5 (for interactive plotting: run in the python console)
-from include.networks.network import get_network_siamese
+from include.networks.network import get_network
 # to quickly reload functions
 from include.training.dataset import convert_to_dataset
 from include.util.pairs import get_pairs_images, make_dict
@@ -21,6 +21,10 @@ sns.set()
 # print numpy arrays in full
 np.set_printoptions(threshold=sys.maxsize)
 
+print('loading network1')
+# network = get_network(3000)
+print('loading network2')
+print('network loaded')
 # %%  import data
 
 # caption_filename = '/home/kriekemans/KUL/information_retrieval/dataset/results_20130124.token'
@@ -71,41 +75,34 @@ bow_dict_pruned, removed_words = dictionary.prune_dict(word_dict=bow_dict,
 tokens = list(bow_dict_pruned.keys())
 
 print('converting caption features')
-
-caption_feature_size = len(tokens)
-
 progress = 0
-pruned_captions = []
 for caption in captions:
     progress += 1
-    if progress % 2500 == 0:
+    if progress % 100 == 0:
         print(progress)
+        break
     # efficiently store sparse matrix
     # see https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csr_matrix.html
-    caption.features = sparse.csr_matrix(one_hot.convert_to_bow(caption, tokens), dtype=np.int8)
-    pruned_captions.append(caption)
-    if (progress == 5000):
-        break
+    # caption.features = sparse.csr_matrix(one_hot.convert_to_bow(caption, tokens), dtype=np.int8)
+    caption.features = one_hot.convert_to_bow(caption, tokens)
 # %%
-
-captions = pruned_captions
-print('captions -> {}'.format(captions[0].features))
-
 print('features converted')
 
 print('creating pair dict')
 pair_dict = make_dict(images, captions)
+#%%
 print('creating pairs')
 pairs = get_pairs_images(pair_dict)
+#%%
 print('pairs created')
 print('creating dataset with labels')
 dataset, labels = convert_to_dataset(pairs)
 print('dataset created')
-print('network loading')
-network = get_network_siamese(len(images[0].features), caption_feature_size, 256)
-print('network loaded')
-network.fit(dataset, labels, batch_size=1)
-print('network fitted')
+
+# network = get_network_siamese(len(images[0].features), len(captions[0].features), 1024)
+
+# network.fit(dataset, labels)
+
 
 
 # %% output captions to compressed format + update captions.features
