@@ -84,7 +84,7 @@ print(f"Dimension test caption: {test_captions.shape}")
 # %% subset captions and image to start with few examples set everything to maximum
 
 # training
-num_samples_train = 1000  # max 29783
+num_samples_train = 2000  # max 29783
 X_train = train_captions[0:num_samples_train, :].todense()
 y_train = df_image_train.iloc[0:num_samples_train, :].values
 # validation
@@ -93,7 +93,7 @@ X_val = val_captions[0:num_samples_val, :].todense()
 y_val = df_image_val.iloc[0:num_samples_val, :].values
 
 # test
-num_samples_test = 1000  # max 1000
+num_samples_test = 200  # max 1000
 X_test = test_captions[0:num_samples_test, :].todense()
 y_test = df_image_test.iloc[0:num_samples_test, :].values
 
@@ -172,10 +172,10 @@ plt.legend()
 plt.show()
 
 # %% make predictions
-predictions = model.predict(X_test)
+predictions = model.predict(X_train)
 
 # compute_performance
-out = compute_performance.rank_images(true_label=y_test, predictions=predictions, scoring_function='mse', k=10,
+out = compute_performance.rank_images(true_label=y_train, predictions=predictions, scoring_function='mse', k=10,
                                       verbose=True)
 average_precision = compute_performance.comput_average_precision(out)
 average_precision.mean()
