@@ -1,5 +1,6 @@
 import tensorflow_core
-from tensorflow_core.python.keras.backend import transpose, squeeze
+from numpy import float64
+from tensorflow_core.python.keras.backend import transpose, squeeze, map_fn
 from tensorflow_core.python.keras.engine.input_layer import Input
 from tensorflow_core.python.keras.layers import Dense
 from tensorflow_core.python.keras.layers.merge import Concatenate
@@ -10,10 +11,24 @@ from tensorflow_core.python.ops.linalg_ops import norm
 
 def custom_loss():
 
+    def row_distance(y_pred):
+        """ function to map a tensor to l2 distances
+        This function assumes that both label and y are related to 1 row of data
+
+        """
+        print('y_pred -> {}'.format(y_pred.shape))
+        # print('label -> {}'.format(label.shape))
+
+        return float64(10)
+
+
     def custom_distance_loss(label, y_pred):
         """ TODO: implement this loss -> cosine or l2"""
         print('custom loss')
-        y_pred = squeeze(transpose(y_pred))
+        print('y_pred input -> {}'.format(y_pred.shape))
+        print('label -> {}'.format(label.shape))
+
+        y_pred = squeeze(transpose(y_pred), axis=1)
         print('y_pred -> {}'.format(y_pred.get_shape()))
         caption_embedding = y_pred[:y_pred.shape[0] // 2]
         image_embedding = y_pred[y_pred.shape[0] // 2:]
@@ -65,6 +80,9 @@ def get_network(input_size, layers, output_size, input_dim=None, output_activati
 
 
 def get_network_siamese(caption_feature_size, image_feature_size, embedding_size):
+
+    print('input dims = [{}, {}]'.format(caption_feature_size,image_feature_size))
+    print('output = {}'.format(embedding_size))
 
     caption_input = Input(shape=(caption_feature_size,))
     caption_hidden = Dense(4096, activation='relu')(caption_input)

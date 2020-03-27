@@ -30,11 +30,15 @@ def get_pairs_images(dictionary):
         for positive_caption in value:
 
             # take random negative example
-            negative_key = random.choice(list(dictionary.keys()))
-            while negative_key == key or dictionary.get(negative_key) == []:
-                negative_key = random.choice(list(dictionary.keys()))
 
-            negative_caption = random.choice(dictionary.get(negative_key))
+            negative_caption = None
+            while negative_caption is None or negative_caption.features == []:
+                negative_key = random.choice(list(dictionary.keys()))
+                while negative_key == key or dictionary.get(negative_key) == []:
+                    negative_key = random.choice(list(dictionary.keys()))
+
+                negative_caption = random.choice(dictionary.get(negative_key))
+
 
             pairs.append((key, positive_caption, negative_caption))
 
