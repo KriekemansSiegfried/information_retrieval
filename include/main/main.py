@@ -98,7 +98,7 @@ print('dataset created')
 print('network loading')
 network = get_network_triplet_loss(caption_feature_size,len(images[0].features), 256)
 print('network loaded')
-network.fit(dataset, labels, epochs=10, use_multiprocessing=True, callbacks=[EarlyStopping(monitor='loss', patience=20)])
+network.fit(dataset, labels, epochs=10, use_multiprocessing=True, batch_size=32, callbacks=[EarlyStopping(monitor='loss', patience=20)])
 print('network fitted')
 
 # print('features converted')

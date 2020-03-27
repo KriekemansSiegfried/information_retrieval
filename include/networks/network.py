@@ -120,27 +120,21 @@ def get_network_siamese_contrastive(caption_size, image_feature_size, embedding_
     return model
 
 
-
-def triplet_loss(y_true, y_pred, alpha=0.4):
+def triplet_loss(y_true, y_pred, alpha=10000):
     length = y_pred.shape.as_list()[-1]
-    print(
-        'length => {}'.format(length)
-    )
     negative = y_pred[:, 0:int(length / 3)]
     positive = y_pred[:, int(length / 3):int(length * 2 / 3)]
     anchor = y_pred[:, int(length * 2 / 3):int(length)]
-
     pos_dist = K.sum(K.square(anchor - positive), axis=1)
     neg_dist = K.sum(K.square(anchor - negative), axis=1)
 
     loss = pos_dist - neg_dist + alpha
+    # regularized_loss = K.print_tensor(K.maximum(loss, 0.0))
     regularized_loss = K.maximum(loss, 0.0)
-    print('loss -> {}'.format(regularized_loss))
     return regularized_loss
 
 
 def get_network_triplet_loss(caption_size, image_size, embedding_size):
-
     print('caption input size {}'.format(caption_size))
     print('image input size {}'.format(image_size))
     print('embedding size {}'.format(embedding_size))
@@ -156,15 +150,21 @@ def get_network_triplet_loss(caption_size, image_size, embedding_size):
     caption_input_pos, caption_output_pos = base_model(caption_size)
     image_input, image_output = base_model(image_size)
 
+    # caption_output_pos.name = 'caption_pos_embedding'
+    # caption_output_neg.name = 'caption_neg_embedding'
+    # image_output.name = 'image_embedding'
+
     concat = Concatenate()([caption_output_neg, caption_output_pos, image_output])
     model = Model([caption_input_neg, caption_input_pos, image_input], concat)
     model.compile(loss=triplet_loss, optimizer='adam')
     model.summary()
     return model
 
+
 def import_network(file_path):
     model = load_model(file_path)
     return model
+
 
 def export_network(file_path, model):
     model.save(file_path)
