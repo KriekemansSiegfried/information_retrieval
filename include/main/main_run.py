@@ -71,7 +71,8 @@ def run_search_engine(input_caption=caption_string):
     print("translating caption to caption feature")
     caption_feature = caption_to_caption_feature(input_caption)
     print("running model")
-    img_caption_feature = caption_to_image_feature(caption_feature)
+    print(caption_feature)
+    img_caption_feature = caption_to_image_feature([caption_feature])
     print("ranking results")
     search_results = get_most_relevant_image(img_caption_feature)
     return search_results
