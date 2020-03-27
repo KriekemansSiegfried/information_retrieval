@@ -43,3 +43,4 @@ def get_pairs_images(dictionary):
             pairs.append((key, positive_caption, negative_caption))
 
     return pairs
+

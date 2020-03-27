@@ -12,9 +12,9 @@ from include.bow import dictionary, one_hot
 from include.io import import_captions, import_images, output_captions
 # style seaborn for plotting
 # %matplotlib qt5 (for interactive plotting: run in the python console)
-from include.networks.network import get_network_siamese
+from include.networks.network import get_network_siamese, get_network_siamese_contrastive, get_network_triplet_loss
 # to quickly reload functions
-from include.training.dataset import convert_to_dataset
+from include.training.dataset import convert_to_dataset, convert_to_triplet_dataset
 from include.util.pairs import get_pairs_images, make_dict
 
 sns.set()
@@ -22,6 +22,7 @@ sns.set()
 np.set_printoptions(threshold=sys.maxsize)
 
 # %%  import data
+
 
 # caption_filename = '/home/kriekemans/KUL/information_retrieval/dataset/results_20130124.token'
 # image_filename = '/home/kriekemans/KUL/information_retrieval/dataset/image_features.csv'
@@ -41,14 +42,6 @@ bow_dict = dictionary.create_dict(captions)
 # %%
 # get pandas dataframe with
 # most frequent and least frequent words and visualize
-
-# most frequent
-df_word_freq = dictionary.rank_word_freq(dic=bow_dict,
-                                 n=20, ascending=False, visualize=True)
-
-# least frequent
-df_word_freq = dictionary.rank_word_freq(dic=bow_dict,
-                                 n=20, ascending=True, visualize=True)
 
 # %%
 # get stop words
@@ -82,30 +75,49 @@ for caption in captions:
         print(progress)
     # efficiently store sparse matrix
     # see https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csr_matrix.html
-    caption.features = sparse.csr_matrix(one_hot.convert_to_bow(caption, tokens), dtype=np.int8)
+    caption.features = one_hot.convert_to_bow(caption, tokens)
     pruned_captions.append(caption)
     if (progress == 5000):
         break
 # %%
 
 captions = pruned_captions
-print('captions -> {}'.format(captions[0].features))
 
 print('features converted')
-
-print('creating pair dict')
+#
+print('creating triplet dict')
 pair_dict = make_dict(images, captions)
-print('creating pairs')
+print('creating triplets')
 pairs = get_pairs_images(pair_dict)
 print('pairs created')
 print('creating dataset with labels')
-dataset, labels = convert_to_dataset(pairs)
+dataset, labels = convert_to_triplet_dataset(pairs)
 print('dataset created')
 print('network loading')
-network = get_network_siamese(len(images[0].features), caption_feature_size, 256)
+network = get_network_triplet_loss(caption_feature_size,len(images[0].features), 256)
 print('network loaded')
-network.fit(dataset, labels, batch_size=1)
+network.fit(dataset, labels, batch_size=32, epochs=10)
 print('network fitted')
+
+# print('features converted')
+#
+# print('creating pair dict')
+# pair_dict = make_dict(images, captions)
+# print('creating pairs')
+# pairs = get_pairs_images(pair_dict)
+#
+#
+# print('pairs created')
+# print('creating dataset with labels')
+# dataset, labels = convert_to_dataset(pairs)
+# print('dataset created')
+# print('network loading')
+# network = get_network_siamese(len(images[0].features), caption_feature_size, 256)
+# print('network loaded')
+#
+# print('input_2 -> {}'.format(dataset[1].shape))
+# network.fit(dataset, labels, batch_size=1)
+# print('network fitted')
 
 
 # %% output captions to compressed format + update captions.features
