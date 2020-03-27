@@ -51,7 +51,7 @@ stop_words = set(stopwords.words('english'))
 bow_dict_pruned, removed_words = dictionary.prune_dict(word_dict=bow_dict,
                                                        stopwords=stop_words,
                                                        min_word_len=3,
-                                                       min_freq=0,
+                                                       min_freq=10,
                                                        max_freq=1000)
 
 # have a look again at the most frequent words from the updated dictionary
@@ -96,7 +96,7 @@ print('dataset created')
 print('network loading')
 network = get_network_triplet_loss(caption_feature_size,len(images[0].features), 256)
 print('network loaded')
-network.fit(dataset, labels, batch_size=32, epochs=10)
+network.fit(dataset, labels, epochs=10, use_multiprocessing=True)
 print('network fitted')
 
 # print('features converted')

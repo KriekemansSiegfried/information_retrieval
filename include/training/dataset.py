@@ -47,6 +47,9 @@ def convert_to_triplet_dataset(triplets):
         caption_features_set_neg.append(negative.features)
         labels.append(0)  # dummy label
 
+        # yield [negative.features, positive.features, key.features], np.float64(1)
+
+
     image_features_set = np.stack(image_features_set, axis=0)
     caption_features_set_pos = np.stack(caption_features_set_pos, axis=0)
     caption_features_set_neg = np.stack(caption_features_set_neg, axis=0)

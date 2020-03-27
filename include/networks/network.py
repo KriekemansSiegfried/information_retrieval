@@ -120,9 +120,12 @@ def get_network_siamese_contrastive(caption_size, image_feature_size, embedding_
     return model
 
 
+
 def triplet_loss(y_true, y_pred, alpha=0.4):
     length = y_pred.shape.as_list()[-1]
-
+    print(
+        'length => {}'.format(length)
+    )
     negative = y_pred[:, 0:int(length / 3)]
     positive = y_pred[:, int(length / 3):int(length * 2 / 3)]
     anchor = y_pred[:, int(length * 2 / 3):int(length)]
@@ -132,13 +135,19 @@ def triplet_loss(y_true, y_pred, alpha=0.4):
 
     loss = pos_dist - neg_dist + alpha
     regularized_loss = K.maximum(loss, 0.0)
-
+    print('loss -> {}'.format(regularized_loss))
     return regularized_loss
 
+
 def get_network_triplet_loss(caption_size, image_size, embedding_size):
+
+    print('caption input size {}'.format(caption_size))
+    print('image input size {}'.format(image_size))
+    print('embedding size {}'.format(embedding_size))
+
     def base_model(size):
         input = Input(shape=(size,))
-        hidden = Dense(4096, activation='relu')(input)
+        hidden = Dense(512, activation='relu')(input)
         output = Dense(embedding_size, activation='relu')(hidden)
 
         return [input, output]
@@ -153,9 +162,9 @@ def get_network_triplet_loss(caption_size, image_size, embedding_size):
     model.summary()
     return model
 
-    def import_network(file_path):
-        model = load_model(file_path)
-        return model
+def import_network(file_path):
+    model = load_model(file_path)
+    return model
 
-    def export_network(file_path, model):
-        model.save(file_path)
+def export_network(file_path, model):
+    model.save(file_path)
