@@ -25,8 +25,6 @@ def get_pairs_images(dictionary):
     index = 0
     for key, value in dictionary.items():
         index += 1
-        if index == 100:
-            break
         for positive_caption in value:
 
             # take random negative example
@@ -43,3 +41,4 @@ def get_pairs_images(dictionary):
             pairs.append((key, positive_caption, negative_caption))
 
     return pairs
+
