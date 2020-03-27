@@ -19,8 +19,8 @@ from tensorflow.keras.models import Sequential
 print('done', flush=True)
 
 # data read home directory, this differs on some of our computers
-data_read_home = "include/data/"  # |--> for Pieter-Jan and Siegfried
-# data_read_home = "../data/"  # |--> for Giel
+# data_read_home = "include/data/"  # |--> for Pieter-Jan and Siegfried
+data_read_home = "../data/"  # |--> for Giel
 
 # %% load data
 print("loading 'caption_features.npz'... ", end='', flush=True)
@@ -64,7 +64,9 @@ y_image_subset = df_image_train.iloc[0:int(num_samples), :].values
 val_size = round(num_samples * 0.25)
 X_train, X_val, y_train, y_val = train_test_split(X_captions_subset,
                                                   y_image_subset, test_size=val_size)
-
+# print("input type = " + str(type(X_train)))
+# print("input type = " + str(type(X_train[0])))
+# print(X_train[0])
 print(f'Size train X: {X_train.shape}, train y labels {y_train.shape}')
 print(f'Size validation X: {X_val.shape}, validation y labels {y_val.shape}')
 

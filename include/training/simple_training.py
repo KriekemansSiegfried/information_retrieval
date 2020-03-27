@@ -1,4 +1,12 @@
-# use 'model checkpoint' to retrace best prior model
+#-----------------------------------------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------------------------------------
+#
+#              THIS FILE IS INCOMPLETE, AND IS TO BE FINISHED FOR A FUTURE VERSION OF THE PROJECT
+#
+#-----------------------------------------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------------------------------------
+
+"""---------- general functionality's, global data-fields, and imports required for the general methods -------------"""
 import io
 import os
 import sys
@@ -45,24 +53,14 @@ def single_line_print(string, red=False):
         sys.stdout = sys.__stdout__
         print(string)
 
+"""--------------------------------- start of the actual script, starting with imports ------------------------------"""
 
 interface_print("performing imports... ")
-from collections import OrderedDict
-import matplotlib.pyplot as plt
-import numpy as np
+# external imports
 import pandas as pd
 import scipy.sparse as sparse
-from scipy import spatial
-# keras
-from sklearn.model_selection import train_test_split
-from tensorflow.keras import optimizers
-from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
-from tensorflow.keras.callbacks import ReduceLROnPlateau
-from tensorflow.keras.layers import Dense, Dropout
-from tensorflow.keras.models import Sequential
-# own code
+# imports from other files in the project
 from include.networks import network as nw
-
 interface_print("done")
 
 """---------------------------------concerning data to be worked with------------------------------------------------"""
@@ -97,7 +95,7 @@ def default_data_load():
     feature_path = "include/data/image_features.csv"
     load_data(caption_path, feature_path)
 
-
+"""
 # %% subset captions and image to start with few examples
 num_samples = 2000
 X_captions_subset = df_captions[0:num_samples, :][::5].todense().astype(float)
@@ -112,7 +110,7 @@ print(f'Size train X: {X_train.shape}, train y labels {y_train.shape}')
 print(f'Size validation X: {X_val.shape}, validation y labels {y_val.shape}')
 
 # %% define model architecture (play with this)
-
+"""
 
 """---------------------------------concerning current model/the model used------------------------------------------"""
 
@@ -164,8 +162,10 @@ def get_model_info():
     running_model.summary()
 
 
-def create_new_model():
+# def create_new_model():
 
+
+"""
 # %% define model architecture (play with this)
 
 model = Sequential()
@@ -241,7 +241,7 @@ plt.show()
 # %% make predictions
 predictions_val = model.predict(X_val)
 
-
+"""
 # %% TODO: 1) Make functins that checks for each predictions which images are closest (rank them)
 
 

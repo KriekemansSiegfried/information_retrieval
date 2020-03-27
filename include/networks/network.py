@@ -28,14 +28,39 @@ def custom_loss():
     return custom_distance_loss
 
 
-def get_network(input_size):
+def get_network(input_size, layers, output_size, input_dim=None, output_activation='relu',
+                loss=MeanSquaredError, optimizer=None, metrics=None):
+    """
+
+    :param input_size:  bit_size of the input layer?
+    :param layers: an array of integer values, entries being bit_size for every intermediate layer
+    :param output_size: size of the output layer
+    :param input_dim: dimension of the input
+    :param output_activation: output activation function, default set to 'relu'
+    :param loss: the loss-function
+    :param optimizer:
+    :param metrics:
+    :return:
+    """
     model = Sequential()
-    model.add(Dense(input_size, activation='relu'))
-    model.add(Dense(4096, activation='relu'))
-    model.add(Dense(2048, activation='relu'))
-
-    model.compile('sgd', loss=MeanSquaredError)
-
+    if input_dim is None:
+        model.add(Dense(input_size, activation='relu'))
+    else:
+        model.add(Dense(32, activation='relu', input_dim=input_dim))
+    for layer in layers:
+        model.add(Dense(layer, activation='relu'))
+    model.add(Dense(output_size, activation=output_activation))
+    if optimizer is None:
+        if metrics is None:
+            model.compile(loss=loss)
+        else:
+            model.compile(loss=loss, metrics=metrics)
+    else:
+        if metrics is None:
+            model.compile(loss=loss, optimizer=optimizer)
+        else:
+            model.compile(loss=loss, optimizer=optimizer, metrics=metrics)
+    model.summary()
     return model
 
 

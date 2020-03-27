@@ -2,6 +2,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
+
+
+from include.networks import network
 from sklearn.feature_extraction.text import CountVectorizer
 
 sns.set()
@@ -19,8 +22,8 @@ from include.experimental.compute_performance import compute_performance
 
 # %% load data
 # data read home directory, this differs on some of our computers
-data_read_home = "include/data/"  # |--> for Pieter-Jan and Siegfried
-# data_read_home = "../data/"  # |--> for Giel
+# data_read_home = "include/data/"  # |--> for Pieter-Jan and Siegfried
+data_read_home = "../data/"  # |--> for Giel
 
 # read in train train/validation/test indices
 # split according to https://github.com/BryanPlummer/flickr30k_entities
@@ -101,26 +104,17 @@ print(f'Size train X: {X_train.shape}, train y labels {y_train.shape}')
 print(f'Size validation X: {X_val.shape}, validation y labels {y_val.shape}')
 print(f'Size test X: {X_test.shape}, validation y labels {y_test.shape}')
 
-# %% build model
-model = Sequential()
-model.add(Dense(32, activation='relu', input_dim=X_train.shape[1]))
-# model.add(Dropout(0.1))
-model.add(Dense(3096, activation='relu'))
-# model.add(Dropout(0.05))
-model.add(Dense(2048, activation='linear'))
 
-model.summary()
+# ------ creating a new model -------
+# define the number of intermediate layers and their size in a list
+# further, define input dimension, and define custom optimizer
+# finally, create model
+layers = [3096]
+input_dim = X_train.shape[1]
+custom_optimizer = optimizers.Adam(lr=5e-3, beta_1=0.90, beta_2=0.999, epsilon=None, decay=1e-6, amsgrad=False)
+model = network.get_network(32, layers, 2048, input_dim=input_dim, output_activation='linear',
+                            loss='mse', optimizer=custom_optimizer, metrics=['mse'])
 
-# %%
-
-# play with these parameters and see what works
-batch_size = 256
-epochs = 100
-learning_rate = 5e-3
-
-# reduce learning rate when no improvement are made
-optim = optimizers.Adam(lr=learning_rate, beta_1=0.90, beta_2=0.999, epsilon=None, decay=1e-6, amsgrad=False)
-model.compile(loss='mse', optimizer=optim, metrics=['mse'])
 
 reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.2,
                               patience=10, min_lr=0.001)
@@ -130,6 +124,8 @@ callbacks = [EarlyStopping(monitor='val_loss', patience=20),
              ModelCheckpoint(filepath=filepath, monitor='val_loss',
                              verbose=1, save_best_only=True, mode='max'), reduce_lr]
 
+batch_size = 256
+epochs = 100
 history = model.fit(X_train, y_train[:, 1:].astype(float),  # skip first column since it contains the image_id
                     batch_size=batch_size,
                     epochs=epochs,

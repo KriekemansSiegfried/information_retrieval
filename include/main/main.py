@@ -8,7 +8,7 @@ import seaborn as sns
 from nltk.corpus import stopwords
 
 # custom defined functions
-from include.bow import dictionary, frequent_words as fw, one_hot
+from include.bow import dictionary, one_hot
 from include.io import import_captions, import_images, output_captions
 # style seaborn for plotting
 # %matplotlib qt5 (for interactive plotting: run in the python console)
@@ -47,11 +47,11 @@ bow_dict = dictionary.create_dict(captions)
 # most frequent and least frequent words and visualize
 
 # most frequent
-df_word_freq = fw.rank_word_freq(dic=bow_dict,
+df_word_freq = dictionary.rank_word_freq(dic=bow_dict,
                                  n=20, ascending=False, visualize=True)
 
 # least frequent
-df_word_freq = fw.rank_word_freq(dic=bow_dict,
+df_word_freq = dictionary.rank_word_freq(dic=bow_dict,
                                  n=20, ascending=True, visualize=True)
 
 # %%

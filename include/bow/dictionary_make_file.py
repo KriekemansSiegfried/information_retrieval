@@ -1,9 +1,6 @@
 import joblib
 from nltk.corpus import stopwords
-from keras.preprocessing.text import Tokenizer
-import scipy.sparse as sparse
-import pickle
-from include.bow import dictionary, frequent_words as fw, one_hot
+from include.bow import dictionary
 from include.io import import_captions
 
 from sklearn.feature_extraction.text import CountVectorizer
@@ -22,8 +19,8 @@ print('loaded {} captions'.format(len(captions)))
 #   display the dictionary from least frequent to most frequent
 #   display the dictionary from most frequent to least frequent
 if visualize:
-    df_word_freq = fw.rank_word_freq(dic=bow_dict, n=20, ascending=False, visualize=True)
-    df_word_freq = fw.rank_word_freq(dic=bow_dict, n=20, ascending=True, visualize=True)
+    df_word_freq = dictionary.rank_word_freq(dic=bow_dict, n=20, ascending=False, visualize=True)
+    df_word_freq = dictionary.rank_word_freq(dic=bow_dict, n=20, ascending=True, visualize=True)
     df_word_freq = None
 
 # get/import stop words
