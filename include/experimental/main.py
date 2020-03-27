@@ -192,18 +192,19 @@ print(type(y_train), flush=True)
 print('type of predictions:', end='', flush=True)
 print(type(predictions), flush=True)
 # compute_performance
-# out = compute_performance.rank_images(true_label=y_train, predictions=predictions, scoring_function='mse', k=10,
-#                                      verbose=True)
+out = compute_performance.rank_images(true_label=y_train, predictions=predictions, scoring_function='mse', k=10,
+                                      verbose=True, batch_sizes_equal=True)
 
 
-image_list = io.import_images_as_ndarray('../data/image_features.csv')
-caption_string = 'young guys with shaggy hair look their hands while hanging yard white males outside near many ' \
-                 'bushes green shirts standing blue shirt garden friends enjoy time spent together'
-descriptions = clean_data.load_descriptions(caption_string, first_description_only=False)
-caption_feature = vectorizer.transform(descriptions).todense()
-image_feature = np.array(model.predict([caption_feature]))
-out = compute_performance.rank_images(true_label=image_list, predictions=image_feature, scoring_function='mse', k=10,
-                                      verbose=True)
+# image_list = io.import_images_as_ndarray('../data/image_features.csv')
+# caption_string = 'young guys with shaggy hair look their hands while hanging yard white males outside near many ' \
+#                  'bushes green shirts standing blue shirt garden friends enjoy time spent together'
+# descriptions = clean_data.load_descriptions(caption_string, first_description_only=False)
+# caption_feature = vectorizer.transform(descriptions).todense()
+# image_feature = np.array(model.predict([caption_feature]))
+# out = compute_performance.rank_images(true_label=image_list, predictions=image_feature, scoring_function='mse', k=10,
+#                                       verbose=True, batch_sizes_equal=False)
+
 # out = ranking.rank_images(y_train, predictions, id_included=True)
 print(out)
 average_precision = compute_performance.comput_average_precision(out)

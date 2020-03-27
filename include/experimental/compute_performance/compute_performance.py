@@ -20,7 +20,8 @@ def print_progress_bar(i, maximum, post_text="Finish", n_bar=10):
     sys.stdout.flush()
 
 
-def rank_images(true_label, predictions, scoring_function='mse', k=10, verbose=True):
+def rank_images(true_label, predictions, scoring_function='mse', k=10, verbose=True,
+                batch_sizes_equal=True):
     """
 
     :param true_label:
@@ -45,8 +46,10 @@ def rank_images(true_label, predictions, scoring_function='mse', k=10, verbose=T
                 print("metric not available, available metrics include mse and cosine")
             scores_.append((true_label[j, 0], score))
         # save lowest k id's and scores in ascending (score) order
-        # ranking[true_label[i, 0]] = (sorted(scores_, key=lambda x: x[1]))[0:k]
-        ranking["search_term_" + str(i)] = (sorted(scores_, key=lambda x: x[1]))[0:k]
+        if batch_sizes_equal:
+            ranking[true_label[i, 0]] = (sorted(scores_, key=lambda x: x[1]))[0:k]
+        else:
+            ranking["search_term_" + str(i)] = (sorted(scores_, key=lambda x: x[1]))[0:k]
     print("\n")
     return ranking
 
