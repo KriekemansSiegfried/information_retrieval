@@ -13,9 +13,7 @@ sns.set()
 from tensorflow.keras import optimizers
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 from tensorflow.keras.callbacks import ReduceLROnPlateau
-from tensorflow.keras.layers import Dense
-from tensorflow.keras.models import Sequential
-from include.main import ranking
+
 
 # own functions
 from include.experimental.clean_data import clean_data
@@ -24,8 +22,8 @@ from include.experimental.compute_performance import compute_performance
 
 # %% load data
 # data read home directory, this differs on some of our computers
-# data_read_home = "include/data/"  # |--> for Pieter-Jan and Siegfried
-data_read_home = "../data/"  # |--> for Giel
+data_read_home = "include/data/"  # |--> for Pieter-Jan and Siegfried
+# data_read_home = "../data/"  # |--> for Giel
 
 # read in train train/validation/test indices
 # split according to https://github.com/BryanPlummer/flickr30k_entities
@@ -110,8 +108,8 @@ print(f'Size train X: {X_train.shape}, train y labels {y_train.shape}')
 print(f'Size validation X: {X_val.shape}, validation y labels {y_val.shape}')
 print(f'Size test X: {X_test.shape}, validation y labels {y_test.shape}')
 
+#%%  ------ creating a new model -------
 
-# ------ creating a new model -------
 # define the number of intermediate layers and their size in a list
 # further, define input dimension, and define custom optimizer
 # finally, create model
@@ -130,6 +128,7 @@ callbacks = [EarlyStopping(monitor='val_loss', patience=20),
              ModelCheckpoint(filepath=filepath, monitor='val_loss',
                              verbose=1, save_best_only=True, mode='max'), reduce_lr]
 
+#%% train model
 batch_size = 256
 epochs = 100
 history = model.fit(X_train, y_train[:, 1:].astype(float),  # skip first column since it contains the image_id
@@ -148,10 +147,6 @@ print('Validation mse:', scores[1])
 
 train_scores = model.evaluate(X_train, y_train[:, 1:].astype(float), verbose=1)
 val_scores = model.evaluate(X_val, y_val[:, 1:].astype(float), verbose=1)
-
-print("saving model")
-network.export_network('../data/simple_model.h5', model)
-print("model saved")
 
 print('Training loss:', train_scores[0], ', training mse: ', train_scores[1])
 print('Validation loss:', val_scores[0], ', validation mse: ', val_scores[1])
@@ -178,11 +173,11 @@ plt.legend()
 plt.show()
 
 # %% make predictions
-predictions = model.predict(X_train)
+predictions = model.predict(X_test)
 
 # compute_performance
-# out = compute_performance.rank_images(true_label=y_train, predictions=predictions, scoring_function='mse', k=10,
-#                                       verbose=True)
-out = ranking.rank_images(y_train, predictions, id_included=True)
+out = compute_performance.rank_images(true_label=y_test, predictions=predictions,
+                                      scoring_function='mse', k=10, verbose=True)
+
 average_precision = compute_performance.comput_average_precision(out)
 average_precision.mean()
