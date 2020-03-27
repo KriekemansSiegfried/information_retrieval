@@ -3,10 +3,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
-
+from sklearn.feature_extraction.text import CountVectorizer
 
 from include.networks import network
-from sklearn.feature_extraction.text import CountVectorizer
 
 sns.set()
 # keras
@@ -181,3 +180,26 @@ out = compute_performance.rank_images(true_label=y_test, predictions=predictions
 
 average_precision = compute_performance.comput_average_precision(out)
 average_precision.mean()
+
+# %% test with new caption
+new_caption = {'1000092795': 'young guys with shaggy hair look their hands while hanging '
+                             'yard white males outside near many bushes '
+                             'green shirts standing blue shirt garden friends enjoy time spent together'}
+# %% clean new caption
+clean_data.clean_descriptions(new_caption, min_word_length=3)
+print(new_caption)
+# %% convert caption to bow reperesnetion
+new_X = vectorizer.transform(new_caption.values())
+print(new_X.shape)
+# %% make new prediction
+new_pred = model.predict(new_X.todense())
+
+# %% compare distance with database (y_train)
+distances = []
+for i in range(len(y_train)):
+    dist = ((new_pred - y_train[i, 1:].astype(float)) ** 2).mean(axis=None)
+    distances.append((y_train[i, 0], dist))
+
+# %%sort on first 10
+k = 10
+sorted(distances, key=lambda x: x[1])[0:k]
