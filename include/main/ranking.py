@@ -18,9 +18,13 @@ def rank_images(caption_features, image_features, id_included=False, k=10):
     caption_norms = []
     image_norms = []
     for index in range(0, caption_count):
-        caption_norms.append(norm(caption_features[index, :]))
+        r = caption_features[index, :]
+        caption_norms.append(norm(r.astype(np.float)))
+        # caption_norms.append(norm(caption_features[index, :]))
     for index in range(0, image_count):
-        image_norms.append(norm(image_features[index, :]))
+        r = image_features[index, :]
+        image_norms.append(norm(r.astype(np.float)))
+        # image_norms.append(norm(image_features[index, :]))
 
     base = [range(0, image_count)]
     empty = [None] * image_count
@@ -29,7 +33,11 @@ def rank_images(caption_features, image_features, id_included=False, k=10):
     for i in range(0, caption_count):
         caption_norm = caption_norms[i]
         for j in range(0, image_count):
-            cos_sim[j, 1] = - np.dot(caption_features[i, :], image_features[j, :])/(caption_norm*image_norms[j])
+            a = caption_features[i, :]
+            b = image_features[j, :]
+            cos_sim[j, 1] = - np.dot(a.astype(np.float), b.astype(np.float)) / (caption_norm * image_norms[j])
+
+            # cos_sim[j, 1] = - np.dot(caption_features[i, :], image_features[j, :])/(caption_norm*image_norms[j])
         ranked = cos_sim[cos_sim[:, 1].argsort(kind='quicksort')][:k, 0]
         result[i] = ranked
 

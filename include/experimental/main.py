@@ -149,6 +149,10 @@ print('Validation mse:', scores[1])
 train_scores = model.evaluate(X_train, y_train[:, 1:].astype(float), verbose=1)
 val_scores = model.evaluate(X_val, y_val[:, 1:].astype(float), verbose=1)
 
+print("saving model")
+network.export_network('../data/simple_model.h5', model)
+print("model saved")
+
 print('Training loss:', train_scores[0], ', training mse: ', train_scores[1])
 print('Validation loss:', val_scores[0], ', validation mse: ', val_scores[1])
 
@@ -179,6 +183,6 @@ predictions = model.predict(X_train)
 # compute_performance
 # out = compute_performance.rank_images(true_label=y_train, predictions=predictions, scoring_function='mse', k=10,
 #                                       verbose=True)
-out = ranking.rank_images(y_train, predictions)
+out = ranking.rank_images(y_train, predictions, id_included=True)
 average_precision = compute_performance.comput_average_precision(out)
 average_precision.mean()
