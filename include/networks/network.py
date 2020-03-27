@@ -175,7 +175,8 @@ def get_network_triplet_loss(caption_size, image_size, embedding_size, triplet_m
 
     concat = Concatenate()([output_neg, output_pos, output_image])
     model = Model([input_neg, input_pos, input_image], concat)
-    model.compile(loss=get_triplet_loss(margin=triplet_margin), optimizer='adam')
+    model.compile(loss=get_triplet_loss(margin=triplet_margin), optimizer=
+                  'adam')
     model.summary()
     return model
 

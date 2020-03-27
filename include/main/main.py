@@ -3,22 +3,19 @@
 import sys
 
 import numpy as np
-import scipy.sparse as sparse
 import seaborn as sns
 from nltk.corpus import stopwords
-
 # custom defined functions
-from numpy.linalg import norm
-from tensorflow_core.python.keras.callbacks import EarlyStopping
-from tensorflow_core.python.keras.models import Model
+from tensorflow_core.python.keras.callbacks import EarlyStopping, ModelCheckpoint
+from tensorflow_core.python.keras.utils.vis_utils import plot_model
 
 from include.bow import dictionary, one_hot
-from include.io import import_captions, import_images, output_captions
+from include.io import import_captions, import_images
 # style seaborn for plotting
 # %matplotlib qt5 (for interactive plotting: run in the python console)
-from include.networks.network import get_network_siamese, get_network_siamese_contrastive, get_network_triplet_loss
+from include.networks.network import get_network_triplet_loss
 # to quickly reload functions
-from include.training.dataset import convert_to_dataset, convert_to_triplet_dataset
+from include.training.dataset import convert_to_triplet_dataset
 from include.util.pairs import get_pairs_images, make_dict
 
 sns.set()
@@ -31,9 +28,12 @@ np.set_printoptions(threshold=sys.maxsize)
 # caption_filename = '/home/kriekemans/KUL/information_retrieval/dataset/results_20130124.token'
 # image_filename = '/home/kriekemans/KUL/information_retrieval/dataset/image_features.csv'
 
-caption_filename = '../data/results_20130124.token'
-image_filename = '../data/image_features.csv'
-# read in data
+caption_filename = 'include/data/results_20130124.token'
+image_filename = 'include/data/image_features.csv'
+weights_path = 'include/data/best_model_triplet.h5'
+model_json_path = 'include/data/best_model_triplet.json'
+
+# # read in data
 captions = import_captions.import_captions(caption_filename)
 images = import_images.import_images(image_filename)
 
@@ -55,7 +55,7 @@ stop_words = set(stopwords.words('english'))
 bow_dict_pruned, removed_words = dictionary.prune_dict(word_dict=bow_dict,
                                                        stopwords=stop_words,
                                                        min_word_len=3,
-                                                       min_freq=10,
+                                                       min_freq=0,
                                                        max_freq=1000)
 
 # have a look again at the most frequent words from the updated dictionary
@@ -81,7 +81,7 @@ for caption in captions:
     # see https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csr_matrix.html
     caption.features = one_hot.convert_to_bow(caption, tokens)
     pruned_captions.append(caption)
-    if (progress == 5000):
+    if progress == 2500:
         break
 # %%
 
@@ -93,49 +93,67 @@ print('creating triplet dict')
 pair_dict = make_dict(images, captions)
 print('creating triplets')
 pairs = get_pairs_images(pair_dict)
+
+# %%
 print('pairs created')
 print('creating dataset with labels')
 dataset, labels = convert_to_triplet_dataset(pairs)
 print('dataset created')
+
+# %%
 print('network loading')
 network = get_network_triplet_loss(caption_feature_size, len(images[0].features), 512)
+
+model_json = network.to_json()
+with open(model_json_path,'w') as json_file:
+    json_file.write(model_json)
+
+plot_model(network, to_file='model.png', show_shapes=True, show_layer_names=True)
+
+# %%
+
 print('network loaded')
-network.fit(dataset, labels, epochs=10, use_multiprocessing=True, batch_size=32,
-            callbacks=[EarlyStopping(monitor='loss', patience=5)])
+network.fit(dataset, labels, epochs=30, batch_size=32,
+            callbacks=[
+                EarlyStopping(monitor='loss', patience=5),
+                ModelCheckpoint(weights_path, monitor='loss', verbose=1, save_best_only=True, mode='min')
+            ])
 
-caption_model = Model(inputs=network.get_layer('input_pos').input,
-                      outputs=network.get_layer('output_pos').output)
-image_model = Model(inputs=network.get_layer('input_image').input, outputs=network.get_layer('output_image').output)
-
-caption_model.summary()
-image_model.summary()
-
-print('network fitted')
-
-print('inp capt -> {}'.format(dataset[1][0].shape))
-caption_feature_pos = caption_model.predict(np.expand_dims(dataset[1][0], axis=0))
-caption_feature_neg = caption_model.predict(np.expand_dims(dataset[0][100], axis=0))
-
-print('caption in pos -> {}'.format(sparse.csr_matrix(dataset[1][0])))
-print('caption in neg -> {}'.format(sparse.csr_matrix(dataset[0][100])))
-
-print('caption feature pos -> {}'.format(caption_feature_pos))
-print('caption feature neg -> {}'.format(caption_feature_neg))
-image_feature = image_model.predict(np.expand_dims(dataset[2][0], axis=0))
-
-
-caption_feature_pos = np.squeeze(caption_feature_pos, axis=0)
-caption_feature_neg = np.squeeze(caption_feature_neg, axis=0)
-image_feature = np.squeeze(image_feature, axis=0)
-
-print('image_feature -> {}'.format(image_feature.shape))
-print('caption_feature neg -> {}'.format(caption_feature_neg.shape))
-print('caption_feature pos -> {}'.format(caption_feature_pos.shape))
-
-distance_pos = norm(np.subtract(image_feature,caption_feature_pos), ord=2)
-distance_neg = norm(np.subtract(image_feature,caption_feature_neg), ord=2)
-
-print('pos dist / neg dist : {} / {}'.format(distance_pos, distance_neg))
+print('network fit done!')
+#
+# caption_model = Model(inputs=network.get_layer('input_pos').input,
+#                       outputs=network.get_layer('output_pos').output)
+# image_model = Model(inputs=network.get_layer('input_image').input, outputs=network.get_layer('output_image').output)
+#
+# caption_model.summary()
+# image_model.summary()
+#
+# print('network fitted')
+#
+# print('inp capt -> {}'.format(dataset[1][0].shape))
+# caption_feature_pos = caption_model.predict(np.expand_dims(dataset[1][0], axis=0))
+# caption_feature_neg = caption_model.predict(np.expand_dims(dataset[0][100], axis=0))
+#
+# print('caption in pos -> {}'.format(sparse.csr_matrix(dataset[1][0])))
+# print('caption in neg -> {}'.format(sparse.csr_matrix(dataset[0][100])))
+#
+# print('caption feature pos -> {}'.format(caption_feature_pos))
+# print('caption feature neg -> {}'.format(caption_feature_neg))
+# image_feature = image_model.predict(np.expand_dims(dataset[2][0], axis=0))
+#
+#
+# caption_feature_pos = np.squeeze(caption_feature_pos, axis=0)
+# caption_feature_neg = np.squeeze(caption_feature_neg, axis=0)
+# image_feature = np.squeeze(image_feature, axis=0)
+#
+# print('image_feature -> {}'.format(image_feature.shape))
+# print('caption_feature neg -> {}'.format(caption_feature_neg.shape))
+# print('caption_feature pos -> {}'.format(caption_feature_pos.shape))
+#
+# distance_pos = norm(np.subtract(image_feature,caption_feature_pos), ord=2)
+# distance_neg = norm(np.subtract(image_feature,caption_feature_neg), ord=2)
+#
+# print('pos dist / neg dist : {} / {}'.format(distance_pos, distance_neg))
 
 # print('features converted')
 #

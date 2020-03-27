@@ -34,7 +34,6 @@ def convert_to_dataset(pairs):
 
 
 def convert_to_triplet_dataset(triplets):
-    """ convert all pairs to dataset with labels 0/1: negative/positive"""
 
     labels = []
     caption_features_set_neg = []
