@@ -8,6 +8,8 @@ import seaborn as sns
 from nltk.corpus import stopwords
 
 # custom defined functions
+from tensorflow_core.python.keras.callbacks import EarlyStopping
+
 from include.bow import dictionary, one_hot
 from include.io import import_captions, import_images, output_captions
 # style seaborn for plotting
@@ -96,7 +98,7 @@ print('dataset created')
 print('network loading')
 network = get_network_triplet_loss(caption_feature_size,len(images[0].features), 256)
 print('network loaded')
-network.fit(dataset, labels, epochs=10, use_multiprocessing=True)
+network.fit(dataset, labels, epochs=10, use_multiprocessing=True, callbacks=[EarlyStopping(monitor='loss', patience=20)])
 print('network fitted')
 
 # print('features converted')
@@ -121,9 +123,9 @@ print('network fitted')
 
 
 # %% output captions to compressed format + update captions.features
-output_captions.output_captions(captions=captions, tokens=tokens,
-                                file_name="include/data/caption_features.npz",
-                                n_rows=len(captions))
+# output_captions.output_captions(captions=captions, tokens=tokens,
+#                                 file_name="include/data/caption_features.npz",
+#                                 n_rows=len(captions))
 # # representation
 # print(captions[10].features)
 
