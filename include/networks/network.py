@@ -40,7 +40,7 @@ def custom_loss():
 
 
 def get_network(input_size, layers, output_size, input_dim=None, output_activation='relu',
-                loss=MeanSquaredError, optimizer=None, metrics=None):
+                loss='mse', optimizer=None, metrics=None):
     """
 
     :param input_size:  bit_size of the input layer?
