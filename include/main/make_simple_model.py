@@ -1,5 +1,7 @@
-import joblib
-import matplotlib.pyplot as plt
+"""RELOCATE CLASS TO TRAINING PACKAGE ???"""
+
+
+mport matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -15,7 +17,6 @@ from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 from tensorflow.keras.callbacks import ReduceLROnPlateau
 from tensorflow.keras.layers import Dense
 from tensorflow.keras.models import Sequential
-from include.main import ranking
 
 # own functions
 from include.experimental.clean_data import clean_data
@@ -26,6 +27,15 @@ from include.experimental.compute_performance import compute_performance
 # data read home directory, this differs on some of our computers
 # data_read_home = "include/data/"  # |--> for Pieter-Jan and Siegfried
 data_read_home = "../data/"  # |--> for Giel
+"""-----FLAG-----OPEN-----FLAG-----OPEN-----FLAG-----OPEN-----FLAG-----OPEN-----FLAG-----OPEN-----FLAG-----OPEN----"""
+"""
+proposal:
+below section appoint to class in package data, or in package io, single functions:
+'get_df_image_train()', 'get_df_image_val()', and 'get_df_image_test()'
+
+reasoning: pd.read_csv should not be called upon in this class, nor should transformation from
+image data to different data sets be performed in this class
+"""
 
 # read in train train/validation/test indices
 # split according to https://github.com/BryanPlummer/flickr30k_entities
@@ -46,6 +56,11 @@ df_image_test = df_image[df_image.iloc[:, 0].isin(test_idx.tolist())]
 print(f"shape training data image: {df_image_train.shape}")
 print(f"shape validation data image: {df_image_val.shape}")
 print(f"shape test data image: {df_image_test.shape}")
+
+"""-----FLAG-----CLOSE----FLAG-----CLOSE----FLAG-----CLOSE----FLAG-----CLOSE----FLAG-----CLOSE----FLAG-----CLOSE---"""
+
+
+
 
 # %%
 # read in caption data
@@ -76,10 +91,6 @@ train_dic, val_dic, test_dic = split_data.train_val_test_set_desc(descriptions,
 vectorizer = CountVectorizer(stop_words='english', min_df=1, max_df=100)
 # fit on training data (descriptions)
 vectorizer.fit(train_dic.values())
-print("saving vectorizer")
-filename = '../data/vectorizer_model.sav'
-joblib.dump(vectorizer, filename)
-
 print(len(vectorizer.vocabulary_))
 # transform descriptions (based on the fit from the training data)
 train_captions = vectorizer.transform(train_dic.values())
@@ -110,7 +121,7 @@ print(f'Size train X: {X_train.shape}, train y labels {y_train.shape}')
 print(f'Size validation X: {X_val.shape}, validation y labels {y_val.shape}')
 print(f'Size test X: {X_test.shape}, validation y labels {y_test.shape}')
 
-
+"""-------below is ok------------------------------------------------------------------------------------------------"""
 # ------ creating a new model -------
 # define the number of intermediate layers and their size in a list
 # further, define input dimension, and define custom optimizer
@@ -121,7 +132,7 @@ custom_optimizer = optimizers.Adam(lr=5e-3, beta_1=0.90, beta_2=0.999, epsilon=N
 model = network.get_network(32, layers, 2048, input_dim=input_dim, output_activation='linear',
                             loss='mse', optimizer=custom_optimizer, metrics=['mse'])
 
-
+"""-------above is ok------------------------------------------------------------------------------------------------"""
 reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.2,
                               patience=10, min_lr=0.001)
 
@@ -177,8 +188,7 @@ plt.show()
 predictions = model.predict(X_train)
 
 # compute_performance
-# out = compute_performance.rank_images(true_label=y_train, predictions=predictions, scoring_function='mse', k=10,
-#                                       verbose=True)
-out = ranking.rank_images(y_train, predictions)
+out = compute_performance.rank_images(true_label=y_train, predictions=predictions, scoring_function='mse', k=10,
+                                      verbose=True)
 average_precision = compute_performance.comput_average_precision(out)
 average_precision.mean()

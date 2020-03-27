@@ -7,7 +7,7 @@ from include.networks.network import import_network
 image_file_directory = '../data/flickr30k-images/'
 image_csv_directory = '../data/image_features.csv'
 path_to_vectorizer = '../data/vectorizer_model.sav'
-path_to_simple_model = '../data/simple_model.h5'
+path_to_simple_model = '../experimental/simple_model.hdf5'
 network = None
 image_array = None
 vectorizer = None
@@ -45,12 +45,12 @@ def load_network(file_path=path_to_simple_model):
 
 
 def caption_to_image_feature(caption=caption_string):
-    global caption_string, model
-    if model is None:
+    global caption_string, network
+    if network is None:
         load_network()
         print('No model was loaded yet, default model has been loaded')
     caption_feature = caption_to_caption_feature(caption)
-    image_feature = model.predict(caption_feature.todense())
+    image_feature = network.predict(caption_feature.todense())
     return image_feature[0]
 
 
@@ -68,9 +68,12 @@ def get_most_relevant_image(image_feature, number_or_images=10):
 
 
 def run_search_engine(input_caption=caption_string):
+    print("translating caption to caption feature")
     caption_feature = caption_to_caption_feature(input_caption)
-    imp_caption_feature = caption_to_image_feature(caption_feature)
-    search_results = get_most_relevant_image(imp_caption_feature)
+    print("running model")
+    img_caption_feature = caption_to_image_feature(caption_feature)
+    print("ranking results")
+    search_results = get_most_relevant_image(img_caption_feature)
     return search_results
 
 
@@ -84,9 +87,13 @@ def open_image(file_path, is_name_only=True):
 
 
 # general script
+print("importing images")
 import_images()
+print("loading network")
 load_network()
+print("loading vectorizer")
 load_caption_feature_translator()
+print("running search engine")
 search_result = run_search_engine()
 open_image(search_result[0, 0])
 print(search_result)
