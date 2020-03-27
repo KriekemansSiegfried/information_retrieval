@@ -18,6 +18,7 @@ from tensorflow.keras.models import Sequential
 from include.main import ranking
 
 # own functions
+from include.io import import_images as io
 from include.experimental.clean_data import clean_data
 from include.experimental.split_data import split_data
 from include.experimental.compute_performance import compute_performance
@@ -76,12 +77,18 @@ train_dic, val_dic, test_dic = split_data.train_val_test_set_desc(descriptions,
 vectorizer = CountVectorizer(stop_words='english', min_df=1, max_df=100)
 # fit on training data (descriptions)
 vectorizer.fit(train_dic.values())
+
 print("saving vectorizer")
 filename = '../data/vectorizer_model.sav'
 joblib.dump(vectorizer, filename)
+# vocab = CountVectorizer(vocabulary=vectorizer.vocabulary_)
+# joblib.dump(vocab, filename)
 
 print(len(vectorizer.vocabulary_))
 # transform descriptions (based on the fit from the training data)
+
+# vectorizer = joblib.load('../data/vectorizer_model.sav')
+
 train_captions = vectorizer.transform(train_dic.values())
 val_captions = vectorizer.transform(val_dic.values())
 test_captions = vectorizer.transform(test_dic.values())
@@ -180,9 +187,24 @@ plt.show()
 # %% make predictions
 predictions = model.predict(X_train)
 
+print('type of images_list:', end='', flush=True)
+print(type(y_train), flush=True)
+print('type of predictions:', end='', flush=True)
+print(type(predictions), flush=True)
 # compute_performance
 # out = compute_performance.rank_images(true_label=y_train, predictions=predictions, scoring_function='mse', k=10,
-#                                       verbose=True)
-out = ranking.rank_images(y_train, predictions, id_included=True)
+#                                      verbose=True)
+
+
+image_list = io.import_images_as_ndarray('../data/image_features.csv')
+caption_string = 'young guys with shaggy hair look their hands while hanging yard white males outside near many ' \
+                 'bushes green shirts standing blue shirt garden friends enjoy time spent together'
+descriptions = clean_data.load_descriptions(caption_string, first_description_only=False)
+caption_feature = vectorizer.transform(descriptions).todense()
+image_feature = np.array(model.predict([caption_feature]))
+out = compute_performance.rank_images(true_label=image_list, predictions=image_feature, scoring_function='mse', k=10,
+                                      verbose=True)
+# out = ranking.rank_images(y_train, predictions, id_included=True)
+print(out)
 average_precision = compute_performance.comput_average_precision(out)
 average_precision.mean()
