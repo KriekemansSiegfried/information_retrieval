@@ -5,3 +5,19 @@
  - Giel Indekeu
  - Siegfried Kriekemans
  - Pieter-Jan Inghelbrecht
+
+
+To run the search engine:
+   1. Open the include.main.search_engine file.
+   2. Either change 'caption_string' in the top of the file to what you want to search for, and than run, or
+      call include.main.search_engine.run_search_engine(XXX), with as an argument (XXX) the search string
+      you want to search for.
+
+Following Errors may occur:
+    FileNotFoundException: resolve this error by altering the directories to the model, vectorizer, etc.
+    in the top of the file
+
+
+Note: the search_engine is build on the simple model, a more complex and far more efficient model was created later,
+but has not yet been added/made available via the search_engine module. This will be accomplished in future versions
+of the project!
