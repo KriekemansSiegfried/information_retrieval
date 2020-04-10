@@ -1,22 +1,19 @@
-import tensorflow_core
-from numpy import float64
 import tensorflow_core.python.keras.backend as K
-from tensorflow_core.python.keras.backend import transpose, squeeze, map_fn
+from numpy import float64
+from tensorflow_core.python.keras.backend import transpose, squeeze
 from tensorflow_core.python.keras.engine.input_layer import Input
 from tensorflow_core.python.keras.layers import Dense
 from tensorflow_core.python.keras.layers.core import Lambda
 from tensorflow_core.python.keras.layers.merge import Concatenate
-from tensorflow_core.python.keras.losses import MeanSquaredError
-from tensorflow_core.python.keras.models import Model, Sequential, load_model
-from tensorflow_core.python.keras.optimizers import Adam
 from tensorflow_core.python.keras.layers.normalization import BatchNormalization
+from tensorflow_core.python.keras.models import Model, Sequential, load_model
 from tensorflow_core.python.ops.linalg_ops import norm
 
 
 def custom_loss():
     def row_distance(y_pred):
         """ function to map a tensor to l2 distances
-        This function assumes that both label and y are related to 1 row of data
+        This function assumes that both label and y are related to 1 row of output
 
         """
         print('y_pred -> {}'.format(y_pred.shape))
@@ -139,7 +136,7 @@ def get_triplet_loss(margin):
     return triplet_loss
 
 
-def get_network_triplet_loss(caption_size, image_size, embedding_size, triplet_margin=1000):
+def get_network_triplet_loss(caption_size, image_size, embedding_size, triplet_margin=1000, optimizer='adam'):
     print('caption input size {}'.format(caption_size))
     print('image input size {}'.format(image_size))
     print('embedding size {}'.format(embedding_size))
@@ -175,8 +172,7 @@ def get_network_triplet_loss(caption_size, image_size, embedding_size, triplet_m
 
     concat = Concatenate()([output_neg, output_pos, output_image])
     model = Model([input_neg, input_pos, input_image], concat)
-    model.compile(loss=get_triplet_loss(margin=triplet_margin), optimizer=
-                  'adam')
+    model.compile(loss=get_triplet_loss(margin=triplet_margin), optimizer=optimizer)
     model.summary()
     return model
 
