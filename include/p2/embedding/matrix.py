@@ -40,6 +40,28 @@ class SignMatrix:
         self.matrix = self.gamma * np.sign(self.matrix_f.matrix + self.matrix_g.matrix)
         return self.matrix
 
-    def update(self,samples):
-        for sample in samples:
-            
+    def update(self, samples):
+        pass
+
+
+class ThetaMatrix:
+    """
+    This represents 1/2 * F^T * G
+    """
+
+    def __init__(self, F, G):
+        self.F = F
+        self.G = G
+        self.matrix = None
+        self.recalculate()
+
+    def recalculate(self):
+        self.matrix = 1 / 2 * np.matmul(self.G.matrix, np.transpose(self.F.matrix))
+
+
+class SimilarityMatrix:
+
+    def __init__(self, pairs, nr_images, nr_captions):
+        self.matrix = np.zeros(shape=(nr_images, nr_captions))
+        for (index_image, index_caption) in pairs:
+            self.matrix[index_image, index_caption] = 1  # value is 1 if pair exists AKA image and caption are similar
