@@ -1,6 +1,5 @@
-from tensorflow_core.python.keras.engine.input_layer import Input
-from tensorflow_core.python.keras.layers.core import Dense
-from tensorflow_core.python.keras.models import Model
+from tensorflow_core.python.keras import Input, Model
+from tensorflow_core.python.keras.layers import Dense
 
 
 def get_image_embedder(input_size, hidden_size=1024, embedding_size=256):
@@ -21,5 +20,5 @@ def get_caption_embedder(input_size, hidden_size=1024, embedding_size=256):
     hidden = Dense(hidden_size, activation='relu')(input)
     output = Dense(embedding_size, activation='sigmoid')(hidden)
     model = Model(inputs=input, outputs=output)
-    model.compile(optimizer='sgd', loss='mean_squared_error')
+    model.compile(optimizer='adam', loss='mean_squared_error', metrics=['accuracy'])
     return model

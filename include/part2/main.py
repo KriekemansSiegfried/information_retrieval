@@ -1,11 +1,8 @@
 import numpy as np
 from numpy.random import rand, randint
-
-from include.p2.embedding.embedding import get_caption_embedder, get_image_embedder
-from include.p2.embedding.matrix import EmbeddingMatrix, SignMatrix, SimilarityMatrix, ThetaMatrix
+from include.part2.embedding.embedding import get_caption_embedder, get_image_embedder
+from include.part2.embedding.matrix import EmbeddingMatrix, SignMatrix, SimilarityMatrix, ThetaMatrix
 from include.part2.loss.loss import f_loss, g_loss
-
-# disable_eager_execution()
 
 """
 Parameters:
@@ -40,6 +37,9 @@ image_caption_pairs = [(randint(0, nr_images), randint(0, nr_captions))
 F = EmbeddingMatrix(embedder=image_embedder, datapoints=images)
 G = EmbeddingMatrix(embedder=caption_embedder, datapoints=captions)
 
+print('F => {}'.format(F))
+print('G => {}'.format(G))
+
 # Create theta matrix
 theta = ThetaMatrix(F, G)
 
@@ -52,36 +52,43 @@ S = SimilarityMatrix(image_caption_pairs, nr_images, nr_captions)
 B = SignMatrix(matrix_f=F, matrix_g=G)
 
 # take samples
-batch_size = 32
+batch_size = 1
+epochs = 1
+for j in range(epochs):
+    for i in range(0, len(image_caption_pairs), batch_size):
+        batch_interval = (i, min(len(image_caption_pairs), i + batch_size))
+        print('batch: {}'.format(batch_interval))
+        indices = np.arange(batch_interval[0], batch_interval[1])
 
-for i in range(0, len(image_caption_pairs), batch_size):
-    batch_interval = (i, min(len(image_caption_pairs), i + batch_size))
-    print('batch: {}'.format(batch_interval))
-    indices = np.arange(batch_interval[0], batch_interval[1])
+        image_batch = images[indices, :]
+        caption_batch = captions[indices, :]
 
-    image_batch = images[indices, :]
-    caption_batch = captions[indices, :]
+        # make predictions for the batch
+        image_embeddings = image_embedder.predict(image_batch)
+        caption_embeddings = caption_embedder.predict(caption_batch)
 
-    image_embeddings = image_embedder.predict(image_batch)
-    caption_embeddings = caption_embedder.predict(caption_batch)
+        # replace columns with new embeddings
+        np.put(a=F.matrix, ind=indices, v=image_embeddings)
+        np.put(a=G.matrix, ind=indices, v=caption_embeddings)
 
-    np.put(a=F.matrix, ind=indices, v=image_embeddings)
-    np.put(a=G.matrix, ind=indices, v=caption_embeddings)
+        # calculate loss values
+        loss_f = f_loss(nr_of_samples=len(indices), nr_of_pairs=len(image_caption_pairs),
+                        theta_matrix=theta.matrix, F=F.matrix,
+                        G=G.matrix, B=B.matrix, S=S.matrix)
+        loss_g = g_loss(nr_of_samples=len(indices), nr_of_pairs=len(image_caption_pairs),
+                        theta_matrix=theta.matrix, F=F.matrix,
+                        G=G.matrix, B=B.matrix, S=S.matrix)
 
-    loss_f = f_loss(nr_of_samples=len(indices), nr_of_pairs=len(image_caption_pairs),
-                    theta_matrix=theta.matrix, F=F.matrix,
-                    G=G.matrix, B=B.matrix, S=S.matrix)
+        print('f loss ({}) -> {}'.format(loss_f.shape, loss_f[0]))
+        print('g loss ({}) -> {}'.format(loss_g.shape, loss_g[0]))
 
-    loss_g = g_loss(nr_of_samples=len(indices), nr_of_pairs=len(image_caption_pairs),
-                    theta_matrix=theta.matrix, F=F.matrix,
-                    G=G.matrix, B=B.matrix, S=S.matrix)
+        # update weights based on these loss values
+        F.update_weights(loss_f)
+        G.update_weights(loss_g)
 
-    # image_gradients = gradients(loss_f, image_embedder.trainable_weights)
-    # caption_gradients = gradients(loss_g, caption_embedder.trainable_weights)
+        # recalculate sign matrix
+        sign = B.recalculate()
 
-    B.recalculate()
 
-    print('f loss ({})-> [0] = {}'.format(loss_f.shape, loss_f[0]))
-    print('g loss ({}) -> [0] = {}'.format(loss_g.shape, loss_g[0]))
 
 print('samples generated')
