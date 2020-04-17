@@ -17,13 +17,11 @@ import joblib
 import matplotlib.image as mp_img
 import matplotlib.pyplot as plt
 import numpy as np
-from include.preprocess_data import preprocessing as io
-from include.preprocess_data import ranking
+from include.part1.simple_model.preprocess_data import preprocessing as io, preprocessing, ranking
 
 # from include.search_engine import ranking
 from include.networks.network import import_network
 #from include.part1 import data_analysis as ranking
-from include.preprocess_data import preprocessing
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 

@@ -1,21 +1,24 @@
 # %%
+# data preprocessing
 import json
+import numpy as np
+from sklearn.feature_extraction.text import CountVectorizer
 
 # visualize
 import matplotlib.pyplot as plt
-import numpy as np
-from sklearn.feature_extraction.text import CountVectorizer
+import seaborn as sns
+
+# tensorflow
+from include.networks import network
 from tensorflow.keras import optimizers
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 from tensorflow.keras.callbacks import ReduceLROnPlateau
 from tensorflow_core.python.keras.utils.vis_utils import plot_model
 
-# tensorflow
-from include.networks import network
 # own modules
 from include.part1.triplet_loss.load_model import get_embedding
 from include.part1.triplet_loss.load_model import load_model
-from include.part1.triplet_loss.preprocess_data import preprocessing
+from include.preprocess_data import preprocessing
 from include.part1.triplet_loss.ranking import ranking
 
 # TODO:
@@ -29,9 +32,9 @@ from include.part1.triplet_loss.ranking import ranking
 
 # %% GLOBAL VARIABLES (indicated in CAPITAL letters)
 PATH = "include/input/"
-MODEL_JSON_PATH = 'include/part1/output/models/triplet_loss/best_model.json'
-MODEL_WEIGHTS_PATH = 'include/part1/output/models/triplet_loss/best_model.h5'
-
+MODEL_JSON_PATH = 'include/output/models/triplet_loss/best_model.json'
+MODEL_WEIGHTS_PATH = 'include/output/models/triplet_loss/best_model.h5'
+sns.set()
 # %% read in image output
 image_train, image_val, image_test = preprocessing.read_split_images(path=PATH)
 

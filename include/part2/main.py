@@ -1,6 +1,6 @@
 # data preprocessing
 import numpy as np
-from numpy.random import rand, randint, shuffle, permutation
+from numpy.random import rand, randint, permutation
 from sklearn.feature_extraction.text import CountVectorizer
 import json
 
@@ -35,7 +35,6 @@ Training loop:
 
 """
 
-# %%
 # %% read in image output
 image_train, image_val, image_test = preprocessing.read_split_images(path=PATH)
 
