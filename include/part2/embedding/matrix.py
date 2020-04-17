@@ -23,7 +23,7 @@ class EmbeddingMatrix(Matrix):
         self.embedding_size = embedder.layers[-1].output.shape[1]
         self.datapoints = datapoints
         self.matrix = np.transpose(self.embedder.predict(self.datapoints))
-        self.learning_rate = 1e-4
+        self.learning_rate = 0.001
 
     def _sigmoid_derivative(self, value):
         return value
@@ -85,6 +85,7 @@ class SignMatrix(Matrix):
 
     def recalculate(self):
         self.matrix = self.gamma * np.sign(self.matrix_f.matrix + self.matrix_g.matrix)
+        self.matrix[self.matrix == 0] = 1
         return self.matrix
 
     def update(self, samples):

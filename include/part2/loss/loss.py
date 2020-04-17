@@ -11,7 +11,7 @@ def weight_factor(row, column, theta_matrix):
     return 1 / (1 - exp(-1 * theta_val))
 
 
-def f_loss(nr_of_samples, nr_of_pairs, theta_matrix, F, G, B, S, gamma=1, eta=1):
+def f_loss(samples, all_pairs, theta_matrix, F, G, B, S, gamma=1, eta=1):
     """
     function that calculates the loss of F as written in the assignment
     This function serves as a loss to update the weights of the embedders
@@ -28,26 +28,26 @@ def f_loss(nr_of_samples, nr_of_pairs, theta_matrix, F, G, B, S, gamma=1, eta=1)
     """
     loss_val = 0
     L = np.ones(F.shape[1])
-    for i in range(nr_of_samples):
+    for (image_index, caption_index) in samples:
         # calculate first factor
         factor1 = 0
-        for j in range(nr_of_pairs):
-            first_val = weight_factor(i, j, theta_matrix) * G[:, j]
-            second_val = S[i, j] * G[:, j]
+        for (pair_image_index, pair_caption_index) in all_pairs:
+            first_val = weight_factor(image_index, pair_caption_index, theta_matrix) * G[:, pair_caption_index]
+            second_val = S[image_index, pair_caption_index] * G[:, pair_caption_index]
             factor1 += (first_val - second_val)
         factor1 /= 2
 
         # calculate second factor
-        factor2 = 2 * gamma * (F[:, i] - B[:, i])
+        factor2 = 2 * gamma * (F[:, image_index] - B[:, image_index])
 
         # calculate third factor
-        factor3 = 2 * eta * np.dot(F, L)
+        factor3 = 2 * eta * np.matmul(F, L)
 
         loss_val += (factor1 + factor2 + factor3)
     return loss_val
 
 
-def g_loss(nr_of_samples, nr_of_pairs, theta_matrix, F, G, B, S, gamma=1, eta=1):
+def g_loss(samples, all_pairs, theta_matrix, F, G, B, S, gamma=1, eta=1):
     """
     function that calculates the loss of G as written in the assignment
     This function serves as a loss to update the weights of the embedders
@@ -64,20 +64,20 @@ def g_loss(nr_of_samples, nr_of_pairs, theta_matrix, F, G, B, S, gamma=1, eta=1)
     """
     L = np.ones(G.shape[1])
     loss_val = 0
-    for j in range(nr_of_samples):
+    for (image_index, caption_index) in samples:
         # calculate first factor
         factor1 = 0
-        for i in range(nr_of_pairs):
-            first_val = weight_factor(i, j, theta_matrix) * F[:, i]
-            second_val = S[i, j] * F[:, i]
+        for (pair_image_index, pair_caption_index) in all_pairs:
+            first_val = weight_factor(pair_image_index, caption_index, theta_matrix) * F[:, pair_image_index]
+            second_val = S[pair_image_index, caption_index] * F[:, pair_image_index]
             factor1 += (first_val - second_val)
         factor1 /= 2
 
         # calculate second factor
-        factor2 = 2 * gamma * (G[:, j] - B[:, j])
+        factor2 = 2 * gamma * (G[:, caption_index] - B[:, caption_index])
 
         # calculate third factor
-        factor3 = 2 * eta * np.dot(G, L)
+        factor3 = 2 * eta * np.matmul(G, L)
 
         loss_val += (factor1 + factor2 + factor3)
     return loss_val
