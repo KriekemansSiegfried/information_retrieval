@@ -12,8 +12,7 @@ from tensorflow.keras.utils import plot_model
 
 from include.networks import network
 # own functions
-from include.part1.simple_model.preprocess_data import preprocessing as smd
-from include.part1.simple_model.preprocess_data import ranking
+from include.preprocess_data import ranking, preprocessing as smd
 
 # %% GLOBAL PARAMETERS
 sns.set()

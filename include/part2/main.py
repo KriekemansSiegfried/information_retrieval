@@ -62,7 +62,7 @@ print('G: {}'.format(G.matrix.shape))
 batch_size = 32
 epochs = 1
 for j in range(epochs):
-    for index,i in enumerate(range(0, len(image_caption_pairs), batch_size)):
+    for index, i in enumerate(range(0, len(image_caption_pairs), batch_size)):
         batch_interval = (i, min(len(image_caption_pairs), i + batch_size))
         print('batch: {}'.format(batch_interval))
         indices = np.arange(batch_interval[0], batch_interval[1])
