@@ -1,4 +1,5 @@
 import numpy as np
+from sklearn.preprocessing import Normalizer
 from tensorflow_core.python.keras import backend
 
 
@@ -22,7 +23,11 @@ class EmbeddingMatrix(Matrix):
         self.embedding_size = embedder.layers[-1].output.shape[1]
         self.datapoints = datapoints
         self.matrix = np.transpose(self.embedder.predict(self.datapoints))
-        self.learning_rate = 0.000001
+        self.learning_rate = 1e-4
+
+    def _sigmoid_derivative(self, value):
+        return value
+        # return value * (1 - value)
 
     def update_weights(self, loss_value):
         """
@@ -35,8 +40,10 @@ class EmbeddingMatrix(Matrix):
             if not errors:
                 # if last layer, get loss value and update based on that
                 # TODO: Should a derivative be calculated here?
+                loss_value = loss_value * -1
                 errors.append(loss_value)
                 new_w = layer_weights + loss_value * self.learning_rate
+                new_w = np.squeeze(Normalizer(norm='l2').fit_transform(np.expand_dims(new_w, axis=0)))
                 new_weights.append(new_w)
             else:
                 # new weights are based on the error of the next layer,
@@ -44,14 +51,17 @@ class EmbeddingMatrix(Matrix):
                 last_error = errors[-1]
                 if len(layer_weights.shape) == 2:
                     # If layer_weights is 2-dimensional, need to apply weighted sum for each weight update
-                    new_error = np.array([np.dot(row, last_error) for row in layer_weights])
+                    new_error = np.array([np.dot(last_error, row) for row in layer_weights])
+                    # print('new error -> {}'.format(new_error))
                     new_w = layer_weights + np.matmul(new_error, layer_weights) * self.learning_rate
+                    new_w = Normalizer(norm='l2').fit_transform(new_w)
                     new_weights.append(new_w)
                     errors.append(new_error)
                 else:
                     # Intermediary rows that are not the last layer do
                     # not contain any values (I suppose not used by keras?)
                     new_weights.append(layer_weights)
+        errors
         # layer weights should be reversed so input layer is first, output layer is last
         new_weights = new_weights[::-1]
         self.embedder.set_weights(new_weights)
@@ -94,7 +104,7 @@ class ThetaMatrix(Matrix):
         self.recalculate()
 
     def recalculate(self):
-        self.matrix = 1 / 2 * np.matmul(self.G.matrix, np.transpose(self.F.matrix))
+        self.matrix = 1 / 2 * np.matmul(np.transpose(self.F.matrix),self.G.matrix)
 
 
 class SimilarityMatrix(Matrix):

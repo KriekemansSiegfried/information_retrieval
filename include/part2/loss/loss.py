@@ -28,10 +28,10 @@ def f_loss(nr_of_samples, nr_of_pairs, theta_matrix, F, G, B, S, gamma=1, eta=1)
     """
     loss_val = 0
     L = np.ones(F.shape[1])
-    for i in range(0, nr_of_samples):
+    for i in range(nr_of_samples):
         # calculate first factor
         factor1 = 0
-        for j in range(0, nr_of_pairs):
+        for j in range(nr_of_pairs):
             first_val = weight_factor(i, j, theta_matrix) * G[:, j]
             second_val = S[i, j] * G[:, j]
             factor1 += (first_val - second_val)
@@ -64,10 +64,10 @@ def g_loss(nr_of_samples, nr_of_pairs, theta_matrix, F, G, B, S, gamma=1, eta=1)
     """
     L = np.ones(G.shape[1])
     loss_val = 0
-    for j in range(0, nr_of_samples):
+    for j in range(nr_of_samples):
         # calculate first factor
         factor1 = 0
-        for i in range(0, nr_of_pairs):
+        for i in range(nr_of_pairs):
             first_val = weight_factor(i, j, theta_matrix) * F[:, i]
             second_val = S[i, j] * F[:, i]
             factor1 += (first_val - second_val)
