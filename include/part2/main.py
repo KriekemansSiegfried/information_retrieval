@@ -1,4 +1,4 @@
-# data preprocessing
+# data pre processing
 import numpy as np
 from numpy.random import rand, randint, permutation
 from sklearn.feature_extraction.text import CountVectorizer
@@ -6,6 +6,7 @@ import json
 
 # visualization
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 # own functions
 from include.preprocess_data import preprocessing
@@ -16,7 +17,7 @@ from include.part2.loss.loss import f_loss, g_loss
 
 # %% GLOBAL VARIABLES (indicated in CAPITAL letters)
 PATH = "include/input/"
-
+sns.set()
 # %%
 """
 Parameters:
