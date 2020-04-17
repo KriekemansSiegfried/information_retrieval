@@ -115,7 +115,7 @@ model = network.get_network(32, layers, 2048, input_dim=input_dim, output_activa
                             loss='mse', optimizer=custom_optimizer, metrics=['mse'])
 
 # save model architecutre
-filepath = 'include/part1/output/figures/simple_model/architecture.png'
+filepath = 'include/output/figures/simple_model/architecture.png'
 plot_model(model, to_file=filepath,
            show_shapes=True, show_layer_names=True)
 
@@ -163,7 +163,7 @@ plt.ylim([0, 0.35])
 plt.legend()
 plt.show()
 # save image
-plt.savefig('include/part1/output/figures/simple_model/training.png')
+plt.savefig('include/output/figures/simple_model/training.png')
 
 
 # %% make predictions

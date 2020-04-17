@@ -1,17 +1,29 @@
+# data preprocessing
 import numpy as np
 from numpy.random import rand, randint, shuffle, permutation
+from sklearn.feature_extraction.text import CountVectorizer
+import json
+
+# visualization
+import matplotlib.pyplot as plt
+
+# own functions
+from include.preprocess_data import preprocessing
 from include.part2.embedding.embedding import get_caption_embedder, get_image_embedder
 from include.part2.embedding.matrix import EmbeddingMatrix, SignMatrix, SimilarityMatrix, ThetaMatrix
 from include.part2.loss.loss import f_loss, g_loss
-import matplotlib.pyplot as plt
 
+
+# %% GLOBAL VARIABLES (indicated in CAPITAL letters)
+PATH = "include/input/"
+
+# %%
 """
 Parameters:
 """
 gamma = 1
 eta = 1
 c = 32
-
 """
 Training loop:
 
@@ -23,6 +35,49 @@ Training loop:
 
 """
 
+# %%
+# %% read in image output
+image_train, image_val, image_test = preprocessing.read_split_images(path=PATH)
+
+# %% read in caption output and split in train, validation and test set and save it
+caption_train, caption_val, caption_test = preprocessing.read_split_captions(
+    path=PATH, document='results_20130124.token', encoding="utf8", dir="include/output/data")
+
+# %% in case you already have ran the cel above once before and don't want to run it over and over
+# train
+caption_train = json.load(open('include/output/data/train.json', 'r'))
+# val
+caption_val = json.load(open('include/output/data/val.json', 'r'))
+# test
+caption_test = json.load(open('include/output/data/test.json', 'r'))
+
+# %% clean captions (don't run this more than once or
+# you will prune your caption dictionary even further as it has the same variable name)
+
+# experiment with it: my experience: seems to work better if you apply stemming when training
+stemming = True
+caption_train = preprocessing.clean_descriptions(
+    descriptions=caption_train, min_word_length=2, stem=stemming, unique_only=False
+)
+caption_val = preprocessing.clean_descriptions(
+    descriptions=caption_val, min_word_length=2, stem=stemming, unique_only=False
+)
+caption_test = preprocessing.clean_descriptions(
+    descriptions=caption_test, min_word_length=2, stem=stemming, unique_only=False
+)
+
+# %% convert to bow
+c_vec = CountVectorizer(stop_words='english', min_df=1, max_df=100000)
+# fit on training output (descriptions)
+
+c_vec.fit(caption_train.values())
+print(f"Size vocabulary: {len(c_vec.vocabulary_)}")
+# transform on train/val/test output
+caption_train_bow = [list(caption_train.keys()), c_vec.transform(caption_train.values())]
+caption_val_bow = [list(caption_val.keys()), c_vec.transform(caption_val.values())]
+caption_test_bow = [list(caption_test.keys()), c_vec.transform(caption_test.values())]
+
+#%%
 image_embedder = get_image_embedder(2048, embedding_size=32)
 caption_embedder = get_caption_embedder(4096, embedding_size=32)
 
