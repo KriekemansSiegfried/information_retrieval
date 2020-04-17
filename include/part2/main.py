@@ -3,7 +3,7 @@ from numpy.random import rand, randint
 
 from include.p2.embedding.embedding import get_caption_embedder, get_image_embedder
 from include.p2.embedding.matrix import EmbeddingMatrix, SignMatrix, SimilarityMatrix, ThetaMatrix
-from include.p2.loss.loss import f_loss, g_loss
+from include.part2.loss.loss import f_loss, g_loss
 
 # disable_eager_execution()
 
