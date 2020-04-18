@@ -42,6 +42,7 @@ class EmbeddingMatrix(Matrix):
         errors = []
         weights = self.embedder.get_weights()
         new_weights = []
+        # loop of layers in reverse order
         for layer_weights in weights[::-1]:
             if not errors:
                 # if last layer, get loss value and update based on that

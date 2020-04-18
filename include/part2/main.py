@@ -187,7 +187,7 @@ for j in range(epochs):
         image_embeddings = image_embedder.predict(image_batch)
         caption_embeddings = caption_embedder.predict(caption_batch.todense())
 
-        # replace columns with new embeddings
+        # update columns with new embeddings
         np.put(a=F_train.matrix, ind=indices, v=image_embeddings)
         np.put(a=G_train.matrix, ind=indices, v=caption_embeddings)
 

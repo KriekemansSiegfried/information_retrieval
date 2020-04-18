@@ -8,7 +8,7 @@ def weight_factor(row, column, theta_matrix):
     :return: 
     """
     theta_val = theta_matrix[row, column]
-    return 1 / (1 - exp(-1 * theta_val))
+    return 1 / (1 + exp(-1 * theta_val))
 
 
 def f_loss(samples, all_pairs, theta_matrix, F, G, B, S, gamma=1, eta=1):
