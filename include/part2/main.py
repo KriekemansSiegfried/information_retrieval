@@ -23,8 +23,8 @@ Training loop:
 
 """
 
-image_embedder = get_image_embedder(2048, embedding_size=32)
-caption_embedder = get_caption_embedder(4096, embedding_size=32)
+image_embedder = get_image_embedder(2048, embedding_size=c)
+caption_embedder = get_caption_embedder(4096, embedding_size=c)
 
 # dummy values to test with
 images = (rand(256, 2048) - 1) * 2  # TODO: fill in real values
@@ -60,12 +60,11 @@ print('theta: {}'.format(theta.matrix.shape))
 print('B: {}'.format(B.matrix.shape))
 print('F: {}'.format(F.matrix.shape))
 print('G: {}'.format(G.matrix.shape))
-
 print('B: {}'.format(B.matrix))
 
 # take samples
 batch_size = 32
-epochs = 15
+epochs = 30
 all_indices = np.arange(len(image_caption_pairs))
 
 f_loss_sums = []
@@ -105,8 +104,8 @@ for j in range(epochs):
         print('f loss ({}) -> {}'.format(loss_f.shape, loss_f[0]))
         print('g loss ({}) -> {}'.format(loss_g.shape, loss_g[0]))
 
-        f_loss_sums.append(np.sum(loss_f[0]))
-        g_loss_sums.append(np.sum(loss_g[0]))
+        f_loss_sums.append(np.sum(np.abs(loss_f)))
+        g_loss_sums.append(np.sum(np.abs(loss_g)))
 
         # update weights based on these loss values
         F.update_weights(loss_f)
