@@ -1,26 +1,29 @@
-import joblib
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
-import seaborn as sns
+# data pre processing
 from sklearn.feature_extraction.text import CountVectorizer
+import pandas as pd
+import numpy as np
+import joblib
+
+# visualizing
+import matplotlib.pyplot as plt
+import seaborn as sns
+
 # keras
 from tensorflow.keras import optimizers
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 from tensorflow.keras.callbacks import ReduceLROnPlateau
 from tensorflow.keras.utils import plot_model
 
-from include.networks import network
 # own functions
-from include.part1.simple_model.preprocess_data import preprocessing as smd
+from include.networks import network
 from include.part1.simple_model.preprocess_data import ranking
+from include.part1.simple_model.preprocess_data import preprocessing as smd
 
 # %% GLOBAL PARAMETERS
 sns.set()
 PATH_DATA = "include/input/"
 # %% load output
 # output read home directory, this differs on some of our computers
-
 
 # read in train train/validation/test indices
 # split according to https://github.com/BryanPlummer/flickr30k_entities
@@ -72,7 +75,7 @@ vectorizer = CountVectorizer(stop_words='english', min_df=1, max_df=100)
 # fit on training output (descriptions)
 vectorizer.fit(train_dic.values())
 print("saving vectorizer")
-joblib.dump(vectorizer, "include/part1/output/models/simple_model/vectorizer_model.sav")
+joblib.dump(vectorizer, "include/output/models/simple_model/vectorizer_model.sav")
 
 print(len(vectorizer.vocabulary_))
 # transform descriptions (based on the fit from the training output)
@@ -116,14 +119,14 @@ model = network.get_network(32, layers, 2048, input_dim=input_dim, output_activa
                             loss='mse', optimizer=custom_optimizer, metrics=['mse'])
 
 # save model architecutre
-filepath = 'include/part1/output/figures/simple_model/architecture.png'
+filepath = 'include/output/figures/simple_model/architecture.png'
 plot_model(model, to_file=filepath,
            show_shapes=True, show_layer_names=True)
 
 reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.2,
                               patience=5, min_lr=0.00001)
 # save best model
-filepath = "include/part1/output/models/simple_model/best_model.h5"
+filepath = "include/output/models/simple_model/best_model.h5"
 callbacks = [EarlyStopping(monitor='val_loss', patience=20),
              ModelCheckpoint(filepath=filepath, monitor='val_loss',
                              verbose=1, save_best_only=True, mode='min'), reduce_lr]
@@ -164,7 +167,7 @@ plt.ylim([0, 0.35])
 plt.legend()
 plt.show()
 # save image
-plt.savefig('include/part1/output/figures/simple_model/training.png')
+plt.savefig('include/output/figures/simple_model/training.png')
 
 
 # %% make predictions

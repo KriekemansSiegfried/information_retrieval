@@ -1,21 +1,24 @@
 # %%
+# data preprocessing
 import json
+import numpy as np
+from sklearn.feature_extraction.text import CountVectorizer
 
 # visualize
 import matplotlib.pyplot as plt
-import numpy as np
-from sklearn.feature_extraction.text import CountVectorizer
+import seaborn as sns
+
+# tensorflow
+from include.networks import network
 from tensorflow.keras import optimizers
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 from tensorflow.keras.callbacks import ReduceLROnPlateau
 from tensorflow_core.python.keras.utils.vis_utils import plot_model
 
-# tensorflow
-from include.networks import network
 # own modules
 from include.part1.triplet_loss.load_model import get_embedding
 from include.part1.triplet_loss.load_model import load_model
-from include.part1.triplet_loss.preprocess_data import preprocessing
+from include.preprocess_data import preprocessing
 from include.part1.triplet_loss.ranking import ranking
 
 # TODO:
@@ -29,23 +32,23 @@ from include.part1.triplet_loss.ranking import ranking
 
 # %% GLOBAL VARIABLES (indicated in CAPITAL letters)
 PATH = "include/input/"
-MODEL_JSON_PATH = 'include/part1/output/models/triplet_loss/best_model.json'
-MODEL_WEIGHTS_PATH = 'include/part1/output/models/triplet_loss/best_model.h5'
-
+MODEL_JSON_PATH = 'include/output/models/triplet_loss/best_model.json'
+MODEL_WEIGHTS_PATH = 'include/output/models/triplet_loss/best_model.h5'
+sns.set()
 # %% read in image output
 image_train, image_val, image_test = preprocessing.read_split_images(path=PATH)
 
 # %% read in caption output and split in train, validation and test set and save it
 caption_train, caption_val, caption_test = preprocessing.read_split_captions(
-    path=PATH, document='results_20130124.token', encoding="utf8", dir="include/part1/output/data/triplet_loss")
+    path=PATH, document='results_20130124.token', encoding="utf8", dir="include/output/data")
 
 # %% in case you already have ran the cel above once before and don't want to run it over and over
 # train
-caption_train = json.load(open('include/output/data/triplet_loss/train.json', 'r'))
+caption_train = json.load(open('include/output/data/train.json', 'r'))
 # val
-caption_val = json.load(open('include/output/data/triplet_loss/val.json', 'r'))
+caption_val = json.load(open('include/output/data/val.json', 'r'))
 # test
-caption_test = json.load(open('include/output/data/triplet_loss/test.json', 'r'))
+caption_test = json.load(open('include/output/data/test.json', 'r'))
 
 # %% clean captions (don't run this more than once or
 # you will prune your caption dictionary even further as it has the same variable name)
@@ -110,7 +113,7 @@ model_json = model.to_json()
 with open(MODEL_JSON_PATH, 'w') as json_file:
     json_file.write(model_json)
 
-plot_model(model, to_file='include/part1/output/figures/triplet_loss/architecture.png',
+plot_model(model, to_file='include/output/figures/triplet_loss/architecture.png',
            show_shapes=True, show_layer_names=True)
 
 # %%

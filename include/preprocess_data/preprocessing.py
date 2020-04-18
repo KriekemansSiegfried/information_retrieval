@@ -2,11 +2,9 @@ import json
 import os
 import re
 import string
-
 import numpy as np
 import pandas as pd
 from nltk.stem.lancaster import LancasterStemmer
-
 from include.util.util import print_progress_bar
 
 
@@ -68,8 +66,13 @@ def read_split_images(path=None, verbose=True):
 def load_doc(filename=None, encoding=None):
     """
 
-    :param filename:
-    :param encoding:
+    :param filename: String
+        name of your file
+    :param encoding: String
+        encoding is the name of the encoding used to decode or encode the
+        file. This should only be used in text mode. The default encoding is
+        platform dependent, but any encoding supported by Python can be
+        passed.  See the codecs module for the list of supported encodings.
     :return:
     """
     # open the file as read only
@@ -86,11 +89,14 @@ def read_split_captions(path=None, document=None, encoding=None, verbose=True, d
     """
 
     :param path: String
-
+        path where to find the data
     :param document: String
-
+        name of your file to import
     :param encoding: String
-
+        encoding is the name of the encoding used to decode or encode the
+        file. This should only be used in text mode. The default encoding is
+        platform dependent, but any encoding supported by Python can be
+        passed.  See the codecs module for the list of supported encodings.
     :param verbose: Boolean
         print out the length of the train, validation and test set
     :return: Dictionary
@@ -153,12 +159,18 @@ def read_split_captions(path=None, document=None, encoding=None, verbose=True, d
 def clean_descriptions(descriptions, min_word_length=3, stem=True, unique_only=False, verbose=True):
     """
 
-    :param descriptions:
-    :param min_word_length:
-    :param stem:
-    :param unique_only:
-    :param verbose:
-    :return:
+    :param descriptions: Dictionary
+        containing the captions
+    :param min_word_length: Integer
+        indicating the minimum length of a word to be kept
+    :param stem: Boolean
+        Apply stemming, stemming based on the Lancaster (Paice/Husk) stemming algorithm (default True)
+    :param unique_only: Boolean
+        Keep for for each caption only the unique words (default False)
+    :param verbose: Boolean
+        print progress and other information (Default True)
+    :return: Dictionary
+        cleaned captions
     """
     # stemmer
     if stem:
@@ -225,21 +237,22 @@ def convert_to_triplet_dataset(captions=None, images=None, captions_k=5, p=100,
     """
 
     :param captions: Numpy sparse matrix
-
+        Caption matrix
     :param images: Numpy array
-
+        Image matrix (already one hot encoded)
     :param captions_k: Integer
-
+         Number of captions per image (default 5)
     :param p: Integer
-
+        The number of images used to compute the similarity.
+        The images with the lowest mean squared error are uses to select the caption from
     :param n_row: Integer
-
+        Number of rows to iterate over (default uses all images)
     :param todense: Boolean
-
+        Whether to convert the Numpy sparse matrix to a dense format
     :param verbose: Boolean
-
+        Print progress and other information (Default True)
     :return:
-        1) image_id of the negative and positive examples and
+        1) caption of the negative and positive examples and
         2) caption feature set of the negative, positive examples and image feature set
         3) labels full of zero (needed for keras)
     """
