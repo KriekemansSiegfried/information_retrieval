@@ -1,6 +1,7 @@
 import numpy as np
 from sklearn.preprocessing import Normalizer
 from tensorflow_core.python.keras import backend
+from scipy.sparse import csr_matrix
 
 
 class Matrix:
@@ -22,7 +23,12 @@ class EmbeddingMatrix(Matrix):
         self.embedder = embedder
         self.embedding_size = embedder.layers[-1].output.shape[1]
         self.datapoints = datapoints
-        self.matrix = np.transpose(self.embedder.predict(self.datapoints))
+        # check if datapoint are in a sparse matrix (e.g. caption data)
+        if isinstance(datapoints, csr_matrix):
+            # covert to dense matrix first to predict
+            self.matrix = np.transpose(self.embedder.predict(self.datapoints.todense()))
+        else:
+            self.matrix = np.transpose(self.embedder.predict(self.datapoints))
         self.learning_rate = 0.001
 
     def _sigmoid_derivative(self, value):
@@ -74,17 +80,17 @@ class SignMatrix(Matrix):
     A point is equal to ysign(F + G)
     """
 
-    def __init__(self, matrix_f: EmbeddingMatrix, matrix_g: EmbeddingMatrix, gamma=1):
-        assert (matrix_f.matrix.shape == matrix_g.matrix.shape)
+    def __init__(self, matrix_F: EmbeddingMatrix, matrix_G: EmbeddingMatrix, gamma=1):
+        assert (matrix_F.matrix.shape == matrix_G.matrix.shape)
         super().__init__()
         self.gamma = gamma
-        self.matrix_f = matrix_f
-        self.matrix_g = matrix_g
-        self.matrix = np.empty(shape=matrix_f.matrix.shape)
+        self.matrix_F = matrix_F
+        self.matrix_G = matrix_G
+        self.matrix = np.empty(shape=matrix_F.matrix.shape)
         self.recalculate()
 
     def recalculate(self):
-        self.matrix = self.gamma * np.sign(self.matrix_f.matrix + self.matrix_g.matrix)
+        self.matrix = self.gamma * np.sign(self.matrix_F.matrix + self.matrix_G.matrix)
         self.matrix[self.matrix == 0] = 1
         return self.matrix
 
@@ -105,7 +111,7 @@ class ThetaMatrix(Matrix):
         self.recalculate()
 
     def recalculate(self):
-        self.matrix = 1 / 2 * np.matmul(np.transpose(self.F.matrix),self.G.matrix)
+        self.matrix = 1 / 2 * np.matmul(np.transpose(self.F.matrix), self.G.matrix)
 
 
 class SimilarityMatrix(Matrix):

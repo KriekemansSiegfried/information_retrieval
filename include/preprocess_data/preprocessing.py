@@ -236,7 +236,7 @@ def convert_to_triplet_dataset(captions=None, images=None, captions_k=5, p=100,
                                n_row=None, todense=False, verbose=True):
     """
 
-    :param captions: Numpy sparse matrix
+    :param captions: Numpy matrix in Compressed Sparse Row format
         Caption matrix
     :param images: Numpy array
         Image matrix (already one hot encoded)
