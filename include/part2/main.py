@@ -12,7 +12,6 @@ import seaborn as sns
 from include.preprocess_data import preprocessing
 from include.part2.embedding.embedding import get_caption_embedder, get_image_embedder
 from include.part2.embedding import matrix
-# from include.part2.embedding.matrix import EmbeddingMatrix, SignMatrix, SimilarityMatrix, ThetaMatrix
 from include.part2.loss.loss import f_loss, g_loss
 
 
@@ -36,11 +35,14 @@ Training loop:
 5. update B as ysign(F + G)
 
 """
+
+
+# %%
 # ------------------------------------------------
 # 1) Read and process data in correct format
 # ------------------------------------------------
 
-# %% read in image output
+# read in image output
 images_train, images_val, images_test = preprocessing.read_split_images(path=PATH)
 
 # %% read in caption output and split in train, validation and test set and save it
@@ -87,8 +89,8 @@ captions_test_bow = [list(captions_test.keys()), c_vec.transform(captions_test.v
 
 # 1) image data
 # training data has 29783 images but we only select a subset for now
-# the validation data and test data has "only" 500 images so we don't subset
-nr_images_train = 500
+# the validation data and test data has "only" 1000 images each so we don't subset
+nr_images_train = 500 # take smaller subset for experimenting
 # each image has 5 captions
 captions_per_image = 5
 
@@ -114,14 +116,16 @@ print(f"Dimensions of the caption training data: {captions_pairs_train.shape}")
 print(f"Dimensions of the caption validation data: {captions_pairs_val.shape}")
 print(f"Dimensions of the caption test data: {captions_pairs_test.shape}")
 
+
+#%%
 # -------------------------------------------------
 # 2) Make embedding and prepare B, F, G, S matrices
 # -------------------------------------------------
-#%%
+
+# Load image and caption embedder
 image_embedder = get_image_embedder(images_pairs_train.shape[1], embedding_size=32)
 caption_embedder = get_caption_embedder(captions_pairs_train.shape[1], embedding_size=32)
 
-#%%
 # Create embedding matrices
 # if data points (e.g. caption pairs) are supplied in a compressed format, they will be stored in compressed format
 # to convert to a dense format: G.datapoints.todense()
@@ -156,13 +160,14 @@ print('G: {}'.format(G_train.matrix.shape))
 # ------------------------------------------------
 # %%
 
-batch_size = 64
-epochs = 10
+batch_size = 256
+epochs = 5
 all_indices = np.arange(len(image_caption_pairs))
 
 f_loss_sums = []
 g_loss_sums = []
 all_indices = permutation(all_indices)
+# %%
 for j in range(epochs):
     # permute batches
 
@@ -170,15 +175,17 @@ for j in range(epochs):
         batch_interval = (i, min(len(image_caption_pairs), i + batch_size))
         # print('batch: {}'.format(batch_interval))
 
+        # get indices of selected samples
         indices = all_indices[batch_interval[0]:batch_interval[1]]
         pairs = [image_caption_pairs[index] for index in indices]
         # print('indices -> {}'.format(indices))
-        image_batch = images_train[[image_caption_pairs[i][0] for index in indices]]
-        caption_batch = captions_pairs_train[[image_caption_pairs[i][0] for index in indices]]
+
+        image_batch = images_train[[image_caption_pairs[index][0] for index in indices]]
+        caption_batch = captions_pairs_train[[image_caption_pairs[index][1] for index in indices]]
 
         # make predictions for the batch
         image_embeddings = image_embedder.predict(image_batch)
-        caption_embeddings = caption_embedder.predict(caption_batch)
+        caption_embeddings = caption_embedder.predict(caption_batch.todense())
 
         # replace columns with new embeddings
         np.put(a=F_train.matrix, ind=indices, v=image_embeddings)
@@ -256,7 +263,7 @@ theta = matrix.ThetaMatrix(F, G)
 S = matrix.SimilarityMatrix(image_caption_pairs, nr_images, nr_captions)
 
 # Create sign matrix
-B = matrix.SignMatrix(matrix_f=F, matrix_g=G)
+B = matrix.SignMatrix(matrix_F=F, matrix_G=G)
 
 print('S: {}'.format(S.matrix.shape))
 print('theta: {}'.format(theta.matrix.shape))
@@ -267,7 +274,7 @@ print('B: {}'.format(B.matrix))
 # %%
 # take samples
 batch_size = 32
-epochs = 15
+epochs = 1
 all_indices = np.arange(len(image_caption_pairs))
 
 f_loss_sums = []
@@ -283,8 +290,8 @@ for j in range(epochs):
         indices = all_indices[batch_interval[0]:batch_interval[1]]
         pairs = [image_caption_pairs[index] for index in indices]
         # print('indices -> {}'.format(indices))
-        image_batch = images[[image_caption_pairs[i][0] for index in indices]]
-        caption_batch = captions[[image_caption_pairs[i][0] for index in indices]]
+        image_batch = images[[image_caption_pairs[index][0] for index in indices]]
+        caption_batch = captions[[image_caption_pairs[index][1] for index in indices]]
 
         # make predictions for the batch
         image_embeddings = image_embedder.predict(image_batch)
