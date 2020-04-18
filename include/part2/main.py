@@ -77,6 +77,33 @@ caption_train_bow = [list(caption_train.keys()), c_vec.transform(caption_train.v
 caption_val_bow = [list(caption_val.keys()), c_vec.transform(caption_val.values())]
 caption_test_bow = [list(caption_test.keys()), c_vec.transform(caption_test.values())]
 
+#%% prepare for image embedder (train/validation/test)
+
+# 1) image data
+# training data has 29783 images but we only select a subset for now
+# the validation data and test data has "only" 1000 images so we don't subset
+nr_images_train = 1000
+# each image has 5 captions
+captions_per_image = 5
+
+images_pairs_train = np.repeat(image_train.iloc[0:nr_images_train, 1:].values, repeats=captions_per_image, axis=0)
+images_pairs_val = np.repeat(image_val.iloc[:, 1:].values, repeats=captions_per_image, axis=0)
+images_pairs_test = np.repeat(image_test.iloc[:, 1:].values, repeats=captions_per_image, axis=0)
+
+print(f" Dimensions of the image training data: {images_pairs_train.shape}")
+print(f" Dimensions of the image validation data: {images_pairs_val.shape}")
+print(f" Dimensions of the image test data: {images_pairs_test.shape}")
+
+# 2) caption data
+caption_pairs_train = caption_train_bow[1][0:captions_per_image*nr_images_train, :]
+caption_pairs_val = caption_val_bow[1]
+caption_pairs_test = caption_test_bow[1]
+
+print(f" Dimensions of the caption training data: {caption_pairs_train.shape}")
+print(f" Dimensions of the caption validation data: {caption_pairs_val.shape}")
+print(f" Dimensions of the caption test data: {caption_pairs_test.shape}")
+
+
 #%%
 image_embedder = get_image_embedder(2048, embedding_size=32)
 caption_embedder = get_caption_embedder(4096, embedding_size=32)
@@ -91,14 +118,14 @@ image_caption_pairs = [(randint(0, nr_images), randint(0, nr_captions))
 
 images_pairs = np.array([images[pair[0]] for pair in image_caption_pairs])
 captions_pairs = np.array([captions[pair[1]] for pair in image_caption_pairs])
-
+#%%
 # Create embedding matrices
 F = EmbeddingMatrix(embedder=image_embedder, datapoints=images_pairs)
 G = EmbeddingMatrix(embedder=caption_embedder, datapoints=captions_pairs)
 
 print('F => {}'.format(F))
 print('G => {}'.format(G))
-
+#%%
 # Create theta matrix
 theta = ThetaMatrix(F, G)
 
