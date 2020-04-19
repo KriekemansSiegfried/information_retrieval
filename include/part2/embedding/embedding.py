@@ -22,3 +22,6 @@ def get_caption_embedder(input_size, hidden_size=1024, embedding_size=256):
     model = Model(inputs=input, outputs=output)
     model.compile(optimizer='adam', loss='mean_squared_error', metrics=['accuracy'])
     return model
+
+def store_embeder(model, name):
+    model.save(name)

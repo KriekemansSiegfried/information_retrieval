@@ -1,5 +1,6 @@
 # data pre processing
 import numpy as np
+from include.part2.ranking import find_nearest
 from numpy.random import rand, randint, permutation
 from sklearn.feature_extraction.text import CountVectorizer
 import json
@@ -14,9 +15,11 @@ from include.part2.embedding.embedding import get_caption_embedder, get_image_em
 from include.part2.embedding import matrix
 from include.part2.loss.loss import f_loss, g_loss
 
-
 # %% GLOBAL VARIABLES (indicated in CAPITAL letters)
-PATH = "include/input/"
+#BASE = "include/"
+BASE = "../"
+PATH = BASE + "input/"
+
 sns.set()
 # %%
 """
@@ -48,15 +51,16 @@ images_train, images_val, images_test = preprocessing.read_split_images(path=PAT
 # %% read in caption output and split in train, validation and test set and save it
 # you don't need to run this if you have already ran this before ==> see next block of code
 captions_train, captions_val, captions_test = preprocessing.read_split_captions(
-    path=PATH, document='results_20130124.token', encoding="utf8", dir="include/output/data")
+    path=PATH, document='results_20130124.token', encoding="utf8", dir=(BASE + "output/data"))
+
 
 # %% in case you already have ran the cel above once before and don't want to run it over and over
 # train
-captions_train = json.load(open('include/output/data/train.json', 'r'))
+captions_train = json.load(open(BASE + 'output/data/train.json', 'r'))
 # val
-captions_val = json.load(open('include/output/data/val.json', 'r'))
+captions_val = json.load(open(BASE + 'output/data/val.json', 'r'))
 # test
-captions_test = json.load(open('include/output/data/test.json', 'r'))
+captions_test = json.load(open(BASE + 'output/data/test.json', 'r'))
 
 # %% clean captions (don't run this more than once or
 # you will prune your caption dictionary even further as it has the same variable name)
@@ -90,7 +94,7 @@ captions_test_bow = [list(captions_test.keys()), c_vec.transform(captions_test.v
 # 1) image data
 # training data has 29783 images but we only select a subset for now
 # the validation data and test data has "only" 1000 images each so we don't subset
-nr_images_train = 500 # take smaller subset for experimenting
+nr_images_train = 50 # take smaller subset for experimenting
 # each image has 5 captions
 captions_per_image = 5
 
@@ -228,10 +232,35 @@ plt.plot(g_loss_sums)
 plt.ylabel('sums of g_loss values')
 plt.show()
 
+
+#-------------------------------------------------- TESTING PERFORMANCE ------------------------------------------------
+# testing performance on training data
+print('testing performance on training data')
+trained_subset = captions_train_bow[1][0:nr_images_train*5, :]
+
+image_names = list()
+for i in range(nr_images_train):
+    image_names.append(captions_train_bow[0][i*5][: -2])
+
+captions_input = caption_embedder.predict(captions_train_bow[1].todense())
+images_input = [image_names, image_embedder.predict(images_train)]
+
+score = 0
+for i in range(nr_images_train*5):
+    found = find_nearest(captions_input[i], images_input)
+    #print('expected: ', end='')
+    #print(images_input[0][int(i/5)])
+    #print('found: ', end='')
+    #print(found)
+    if images_input[0][int(i/5)] in found:
+        score += 1
+
+print('performance on training data: ' + str((score*100)/(nr_images_train*5)) + "%")
+
 # --------------------------------------------------------------------
 # Random Data (depreciated: will be removed in future version)
 # --------------------------------------------------------------------
-
+"""
 #%%
 image_embedder = get_image_embedder(2048, embedding_size=32)
 caption_embedder = get_caption_embedder(4096, embedding_size=32)
@@ -293,9 +322,14 @@ for j in range(epochs):
         image_batch = images[[image_caption_pairs[index][0] for index in indices]]
         caption_batch = captions[[image_caption_pairs[index][1] for index in indices]]
 
+        print('input type (2): ' + str(type(image_batch)) + ' <---------')
+
         # make predictions for the batch
         image_embeddings = image_embedder.predict(image_batch)
         caption_embeddings = caption_embedder.predict(caption_batch)
+
+        print('output type (2): ' + str(type(image_embeddings)) + ' <---------')
+
 
         # replace columns with new embeddings
         np.put(a=F.matrix, ind=indices, v=image_embeddings)
@@ -337,3 +371,4 @@ print('g losses -> {}'.format(g_loss_sums))
 plt.plot(g_loss_sums)
 plt.ylabel('sums of g_loss values')
 plt.show()
+"""
