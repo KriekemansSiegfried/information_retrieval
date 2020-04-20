@@ -251,7 +251,7 @@ images_input = image_embedder.predict(images_train)
 
 captions = [image_names_c, captions_input]
 images = [image_names_i, images_input]
-f_score, g_score = ranking.mean_average_precision(captions, images)
+f_score, g_score = ranking.mean_average_precision(captions, images, captions_per_image= 5)
 print('performance on training data: ')
 print('f_score = ' + str(round(f_score*100, 3)) + "%")
 print('g_score = ' + str(round(g_score*100, 3)) + "%")

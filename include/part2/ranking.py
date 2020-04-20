@@ -48,7 +48,7 @@ def find_nearest(input, data_set, nr=10):
     return result_list[0:nr]
 
 
-def mean_average_precision(captions, images):
+def mean_average_precision(captions, images, captions_per_image=1):
     """
     :param captions: a list of two elements:
         1) captions[0] = a list of image names (strings), corresponding to the caption that resulted in the
@@ -103,7 +103,7 @@ def mean_average_precision(captions, images):
         image = images[0][j]
         feature = image_matrix[j, :]
 
-        # calculate the distances from the prediction to individual images
+        # calculate the distances from the prediction to individual captions
         for i in range(nr_captions):
             distances[i] = hamming(caption_matrix[i, :], feature)
 
@@ -115,8 +115,12 @@ def mean_average_precision(captions, images):
         for p in range(10):
             if nearest_10[p] == image:
                 g_score += (1 / (p + 1))
-                break
-    g_score = g_score / nr_images
+                if captions_per_image == 1:
+                    break
+    quotient = 0
+    for i in range(captions_per_image):
+        quotient += nr_images/(i + 1)
+    g_score = g_score / quotient
 
     return f_score, g_score
 
