@@ -1,6 +1,6 @@
 # data pre processing
 import numpy as np
-from include.part2.ranking import find_nearest
+from include.part2 import ranking
 from numpy.random import rand, randint, permutation
 from sklearn.feature_extraction.text import CountVectorizer
 import json
@@ -238,25 +238,23 @@ plt.show()
 print('testing performance on training data')
 trained_subset = captions_train_bow[1][0:nr_images_train*5, :]
 
-image_names = list()
+image_names_c = list()
+image_names_i = list()
 for i in range(nr_images_train):
-    image_names.append(captions_train_bow[0][i*5][: -2])
+    name = captions_train_bow[0][i*5][: -2]
+    for j in range(5):
+        image_names_c.append(name)
+    image_names_i.append(name)
 
-captions_input = caption_embedder.predict(captions_train_bow[1].todense())
-images_input = [image_names, image_embedder.predict(images_train)]
+captions_input = caption_embedder.predict(trained_subset.todense())
+images_input = image_embedder.predict(images_train)
 
-score = 0
-for i in range(nr_images_train*5):
-    found = find_nearest(captions_input[i], images_input)
-    #print('expected: ', end='')
-    #print(images_input[0][int(i/5)])
-    #print('found: ', end='')
-    #print(found)
-    if image_names[int(i/5)] in found:
-        score += 1
-
-print('performance on training data: ' + str((score*100)/(nr_images_train*5)) + "%")
-
+captions = [image_names_c, captions_input]
+images = [image_names_i, images_input]
+f_score, g_score = ranking.mean_average_precision(captions, images)
+print('performance on training data: ')
+print('f_score = ' + str(round(f_score*100, 3)) + "%")
+print('g_score = ' + str(round(g_score*100, 3)) + "%")
 # --------------------------------------------------------------------
 # Random Data (depreciated: will be removed in future version)
 # --------------------------------------------------------------------
