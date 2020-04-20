@@ -252,7 +252,7 @@ for i in range(nr_images_train*5):
     #print(images_input[0][int(i/5)])
     #print('found: ', end='')
     #print(found)
-    if images_input[0][int(i/5)] in found:
+    if image_names[int(i/5)] in found:
         score += 1
 
 print('performance on training data: ' + str((score*100)/(nr_images_train*5)) + "%")
