@@ -16,8 +16,8 @@ from include.part2.embedding import matrix
 from include.part2.loss.loss import f_loss, g_loss
 
 # %% GLOBAL VARIABLES (indicated in CAPITAL letters)
-#BASE = "include/"
-BASE = "../"
+# BASE = "include/"
+BASE = "include/"
 PATH = BASE + "input/"
 
 sns.set()
@@ -39,7 +39,6 @@ Training loop:
 
 """
 
-
 # %%
 # ------------------------------------------------
 # 1) Read and process data in correct format
@@ -52,7 +51,6 @@ images_train, images_val, images_test = preprocessing.read_split_images(path=PAT
 # you don't need to run this if you have already ran this before ==> see next block of code
 captions_train, captions_val, captions_test = preprocessing.read_split_captions(
     path=PATH, document='results_20130124.token', encoding="utf8", dir=(BASE + "output/data"))
-
 
 # %% in case you already have ran the cel above once before and don't want to run it over and over
 # train
@@ -88,13 +86,12 @@ captions_train_bow = [list(captions_train.keys()), c_vec.transform(captions_trai
 captions_val_bow = [list(captions_val.keys()), c_vec.transform(captions_val.values())]
 captions_test_bow = [list(captions_test.keys()), c_vec.transform(captions_test.values())]
 
-
-#%% prepare for image embedder (train/validation/test)
+# %% prepare for image embedder (train/validation/test)
 
 # 1) image data
 # training data has 29783 images but we only select a subset for now
 # the validation data and test data has "only" 1000 images each so we don't subset
-nr_images_train = 50 # take smaller subset for experimenting
+nr_images_train = 50  # take smaller subset for experimenting
 # each image has 5 captions
 captions_per_image = 5
 
@@ -112,7 +109,7 @@ print(f"Dimensions of the image validation data: {images_pairs_val.shape}")
 print(f"Dimensions of the image test data: {images_pairs_test.shape}")
 
 # 2) caption data
-captions_pairs_train = captions_train_bow[1][0:captions_per_image*nr_images_train, :]
+captions_pairs_train = captions_train_bow[1][0:captions_per_image * nr_images_train, :]
 captions_pairs_val = captions_val_bow[1]
 captions_pairs_test = captions_test_bow[1]
 
@@ -120,8 +117,7 @@ print(f"Dimensions of the caption training data: {captions_pairs_train.shape}")
 print(f"Dimensions of the caption validation data: {captions_pairs_val.shape}")
 print(f"Dimensions of the caption test data: {captions_pairs_test.shape}")
 
-
-#%%
+# %%
 # -------------------------------------------------
 # 2) Make embedding and prepare B, F, G, S matrices
 # -------------------------------------------------
@@ -139,16 +135,16 @@ G_train = matrix.EmbeddingMatrix(embedder=caption_embedder, datapoints=captions_
 print('F => {}'.format(F_train))
 print('G => {}'.format(G_train))
 
-#%%
+# %%
 # Create theta matrix
 theta_train = matrix.ThetaMatrix(F_train, G_train)
 
 # Create similarity (S) matrix of size N*M where N is the number of images and M is the number of captions
 image_idx = np.repeat(np.arange(0, nr_images_train, 1), repeats=captions_per_image).tolist()
-caption_idx = np.arange(0, nr_images_train*captions_per_image, 1).tolist()
+caption_idx = np.arange(0, nr_images_train * captions_per_image, 1).tolist()
 image_caption_pairs = [(image_idx[i], caption_idx[i]) for i in range(len(image_idx))]
 
-S_train = matrix.SimilarityMatrix(image_caption_pairs, nr_images_train, nr_images_train*captions_per_image)
+S_train = matrix.SimilarityMatrix(image_caption_pairs, nr_images_train, nr_images_train * captions_per_image)
 
 # Create sign matrix (B)
 B_train = matrix.SignMatrix(matrix_F=F_train, matrix_G=G_train, gamma=1)
@@ -164,7 +160,7 @@ print('G: {}'.format(G_train.matrix.shape))
 # ------------------------------------------------
 # %%
 
-batch_size = 256
+batch_size = 32
 epochs = 5
 all_indices = np.arange(len(image_caption_pairs))
 
@@ -189,11 +185,9 @@ for j in range(epochs):
 
         # make predictions for the batch
         image_embeddings = image_embedder.predict(image_batch)
-        caption_embeddings = caption_embedder.predict(caption_batch.todense())
 
         # update columns with new embeddings
         np.put(a=F_train.matrix, ind=indices, v=image_embeddings)
-        np.put(a=G_train.matrix, ind=indices, v=caption_embeddings)
 
         theta_train.recalculate()
 
@@ -201,6 +195,12 @@ for j in range(epochs):
         loss_f = f_loss(samples=pairs, all_pairs=image_caption_pairs,
                         theta_matrix=theta_train.matrix, F=F_train.matrix,
                         G=G_train.matrix, B=B_train.matrix, S=S_train.matrix)
+
+        caption_embeddings = caption_embedder.predict(caption_batch.todense())
+        np.put(a=G_train.matrix, ind=indices, v=caption_embeddings)
+
+        theta_train.recalculate()
+
         loss_g = g_loss(samples=pairs, all_pairs=image_caption_pairs,
                         theta_matrix=theta_train.matrix, F=F_train.matrix,
                         G=G_train.matrix, B=B_train.matrix, S=S_train.matrix)
@@ -232,16 +232,15 @@ plt.plot(g_loss_sums)
 plt.ylabel('sums of g_loss values')
 plt.show()
 
-
-#-------------------------------------------------- TESTING PERFORMANCE ------------------------------------------------
+# -------------------------------------------------- TESTING PERFORMANCE ------------------------------------------------
 # testing performance on training data
 print('testing performance on training data')
-trained_subset = captions_train_bow[1][0:nr_images_train*5, :]
+trained_subset = captions_train_bow[1][0:nr_images_train * 5, :]
 
 image_names_c = list()
 image_names_i = list()
 for i in range(nr_images_train):
-    name = captions_train_bow[0][i*5][: -2]
+    name = captions_train_bow[0][i * 5][: -2]
     for j in range(5):
         image_names_c.append(name)
     image_names_i.append(name)
@@ -251,10 +250,10 @@ images_input = image_embedder.predict(images_train)
 
 captions = [image_names_c, captions_input]
 images = [image_names_i, images_input]
-f_score, g_score = ranking.mean_average_precision(captions, images, captions_per_image= 5)
+f_score, g_score = ranking.mean_average_precision(captions, images, captions_per_image=5)
 print('performance on training data: ')
-print('f_score = ' + str(round(f_score*100, 3)) + "%")
-print('g_score = ' + str(round(g_score*100, 3)) + "%")
+print('f_score = ' + str(round(f_score * 100, 3)) + "%")
+print('g_score = ' + str(round(g_score * 100, 3)) + "%")
 # --------------------------------------------------------------------
 # Random Data (depreciated: will be removed in future version)
 # --------------------------------------------------------------------
