@@ -1,9 +1,10 @@
 # data pre processing
 import numpy as np
 from include.part2 import ranking
-from numpy.random import rand, randint, permutation
+from numpy.random import  permutation
 from sklearn.feature_extraction.text import CountVectorizer
 import json
+from math import floor
 
 # visualization
 import matplotlib.pyplot as plt
@@ -21,13 +22,13 @@ BASE = "include/"
 PATH = BASE + "input/"
 
 sns.set()
-# %%
+
 """
 Parameters:
 """
-gamma = 1
-eta = 1
-c = 32
+GAMMA = 1
+ETA = 1
+C = 32
 """
 Training loop:
 
@@ -123,8 +124,8 @@ print(f"Dimensions of the caption test data: {captions_pairs_test.shape}")
 # -------------------------------------------------
 
 # Load image and caption embedder
-image_embedder = get_image_embedder(images_pairs_train.shape[1], embedding_size=32)
-caption_embedder = get_caption_embedder(captions_pairs_train.shape[1], embedding_size=32)
+image_embedder = get_image_embedder(images_pairs_train.shape[1], embedding_size=C)
+caption_embedder = get_caption_embedder(captions_pairs_train.shape[1], embedding_size=C)
 
 # Create embedding matrices
 # if data points (e.g. caption pairs) are supplied in a compressed format, they will be stored in compressed format
@@ -147,7 +148,7 @@ image_caption_pairs = [(image_idx[i], caption_idx[i]) for i in range(len(image_i
 S_train = matrix.SimilarityMatrix(image_caption_pairs, nr_images_train, nr_images_train * captions_per_image)
 
 # Create sign matrix (B)
-B_train = matrix.SignMatrix(matrix_F=F_train, matrix_G=G_train, gamma=1)
+B_train = matrix.SignMatrix(matrix_F=F_train, matrix_G=G_train, gamma=GAMMA)
 
 print('S: {}'.format(S_train.matrix.shape))
 print('Theta: {}'.format(theta_train.matrix.shape))
@@ -232,7 +233,9 @@ plt.plot(g_loss_sums)
 plt.ylabel('sums of g_loss values')
 plt.show()
 
-# -------------------------------------------------- TESTING PERFORMANCE ------------------------------------------------
+# ------------------------------------------------
+# 4) Test Performance
+# ------------------------------------------------
 # testing performance on training data
 print('testing performance on training data')
 trained_subset = captions_train_bow[1][0:nr_images_train * 5, :]
@@ -254,118 +257,141 @@ f_score, g_score = ranking.mean_average_precision(captions, images, captions_per
 print('performance on training data: ')
 print('f_score = ' + str(round(f_score * 100, 3)) + "%")
 print('g_score = ' + str(round(g_score * 100, 3)) + "%")
+
+
+
+#%%
 # --------------------------------------------------------------------
-# Random Data (depreciated: will be removed in future version)
+# IMPLEMENTATION BASED ON MATLAB CODE FROM THE PAPER:
+# https://github.com/jiangqy/DCMH-CVPR2017/blob/master/DCMH_matlab/DCMH_matlab/process_DCMH.m
 # --------------------------------------------------------------------
-"""
+
+# 1) Read in data and preprocess
+# ------------------------------
+
+# read in image training data
+images_train, _, _ = preprocessing.read_split_images(path=PATH)
+
+# cpation training data
+captions_train = json.load(open(BASE + 'output/data/train.json', 'r'))
+
+# preprocess caption data
+stemming = True
+captions_train = preprocessing.clean_descriptions(
+    descriptions=captions_train, min_word_length=2, stem=stemming, unique_only=False
+)
+
+# one hot encode
+c_vec = CountVectorizer(stop_words='english', min_df=1, max_df=100000)
+# fit on training output (descriptions)
+
+c_vec.fit(captions_train.values())
+captions_train_bow = [list(captions_train.keys()), c_vec.transform(captions_train.values())]
 #%%
-image_embedder = get_image_embedder(2048, embedding_size=32)
-caption_embedder = get_caption_embedder(4096, embedding_size=32)
+# subset data
+nr_images = 50
+captions_per_image = 5
+nr_captions = nr_pairs = nr_images*captions_per_image
 
-# dummy values to test with
-images = (rand(256, 2048) - 1) * 2  # TODO: fill in real values
-captions = (rand(256, 4096) - 1) * 2  # TODO: fill in real values
-nr_images = len(images)
-nr_captions = len(captions)
-image_caption_pairs = [(randint(0, nr_images), randint(0, nr_captions))
-                       for i in range(512)]  # TODO: fill in real values
+images_train_subset = images_train.iloc[0:nr_images, 1:].values
+caption_train_subset = captions_train_bow[1][0:nr_images*5, :]
 
-images_pairs = np.array([images[pair[0]] for pair in image_caption_pairs])
-captions_pairs = np.array([captions[pair[1]] for pair in image_caption_pairs])
-#%%
-# Create embedding matrices
-F = matrix.EmbeddingMatrix(embedder=image_embedder, datapoints=images_pairs)
-G = matrix.EmbeddingMatrix(embedder=caption_embedder, datapoints=captions_pairs)
-
-print('F => {}'.format(F))
-print('G => {}'.format(G))
 #%%
 
-# Create theta matrix
-theta = matrix.ThetaMatrix(F, G)
+# 2) Initialize matrices
+# ------------------------------
 
+# F and G: shape (C, D) where D is the number of image_caption pairs
+C = 32
+F = np.random.normal(0, 1, C*nr_pairs).reshape(C, nr_pairs)
+G = np.random.normal(0, 1, C*nr_pairs).reshape(C, nr_pairs)
 
-# Create similarity matrix
-S = matrix.SimilarityMatrix(image_caption_pairs, nr_images, nr_captions)
+# Create similarity (S) matrix of shape (N*M) where N is the number of images and M is the number of captions
 
-# Create sign matrix
-B = matrix.SignMatrix(matrix_F=F, matrix_G=G)
+image_idx = np.repeat(np.arange(0, nr_images, 1), repeats=captions_per_image).tolist()
+caption_idx = np.arange(0, nr_captions, 1).tolist()
+image_caption_pairs = [(image_idx[i], caption_idx[i]) for i in range(len(image_idx))]
+S = matrix.SimilarityMatrix(image_caption_pairs, nr_images, nr_captions).matrix
 
-print('S: {}'.format(S.matrix.shape))
-print('theta: {}'.format(theta.matrix.shape))
-print('B: {}'.format(B.matrix.shape))
-print('F: {}'.format(F.matrix.shape))
-print('G: {}'.format(G.matrix.shape))
-print('B: {}'.format(B.matrix))
+# initialize B: shape: (C,D)
+B = GAMMA * np.sign(F + G)
+
+# networks
+image_embedder = get_image_embedder(images_train_subset.shape[1], embedding_size=C)
+caption_embedder = get_caption_embedder(caption_train_subset.shape[1], embedding_size=C)
+
+max_iter = 5
+batch_size = 25
+loss = []
+
 # %%
-# take samples
-batch_size = 32
-epochs = 1
-all_indices = np.arange(len(image_caption_pairs))
 
-f_loss_sums = []
-g_loss_sums = []
-all_indices = permutation(all_indices)
-for j in range(epochs):
-    # permute batches
+# 3) Train model
+# ------------------------------
 
-    for index, i in enumerate(range(0, len(image_caption_pairs), batch_size)):
-        batch_interval = (i, min(len(image_caption_pairs), i + batch_size))
-        # print('batch: {}'.format(batch_interval))
+for epoch in range(max_iter):
 
-        indices = all_indices[batch_interval[0]:batch_interval[1]]
-        pairs = [image_caption_pairs[index] for index in indices]
-        # print('indices -> {}'.format(indices))
-        image_batch = images[[image_caption_pairs[index][0] for index in indices]]
-        caption_batch = captions[[image_caption_pairs[index][1] for index in indices]]
+    print(epoch)
 
-        print('input type (2): ' + str(type(image_batch)) + ' <---------')
+    # 1) loop for images (X)
+    for b in range(floor(nr_images/batch_size)):
 
-        # make predictions for the batch
-        image_embeddings = image_embedder.predict(image_batch)
-        caption_embeddings = caption_embedder.predict(caption_batch)
+        # Randomize indices
+        R = np.random.choice(nr_images, nr_images, replace=False)
+        # Select T indices:
+        T = R[0:batch_size]
+        X = images_train_subset[T, :]
+        # For each sampled point xi calculate F*i
+        output_F = image_embedder(X).numpy()  # shape: (T, C)
+        # update
+        F[:, T] = output_F.transpose()  # shape: (C, T)
 
-        print('output type (2): ' + str(type(image_embeddings)) + ' <---------')
+        # calculate the gradient (vectorized implementation assignment)
+        #  - F and G are of shape: (C, D)
+        #  - S is of shape (N, M), with N the nr images and M is the nr captions = image_caption_pairs = D
+
+        F1 = np.matmul(F, np.ones(F.shape[1], dtype=np.int8)).reshape(C, 1)  # shape: (C, 1)
+        theta = 0.5 * np.matmul(F.transpose(), G)  # shape: (D, D)
+        weight = 1 / (1 + np.exp(-theta[T, :]))  # shape: (T, D)
+        part1 = np.matmul(G, weight.transpose())  # shape: (C, T)
+        part2 = np.matmul(G, S[T, :].transpose())  # shape: (C, T)
+        term1 = 0.5 * (part1 - part2)  # shape: (C, T)  (logloss)
+        term2 = 2 * GAMMA * (F[:, T] - B[:, T]) + 2 * ETA * F1  # shape: (C, T)
+        dj_df_image = term1 + term2  # shape: (C, T)
+
+        # update parameters theta_X by using backprop
 
 
-        # replace columns with new embeddings
-        np.put(a=F.matrix, ind=indices, v=image_embeddings)
-        np.put(a=G.matrix, ind=indices, v=caption_embeddings)
+    # 2) loop for captions (Y)
+    for b in range(floor(nr_captions/batch_size)):
 
-        theta.recalculate()
+        # Randomize indices
+        R = np.random.choice(nr_captions, nr_captions, replace=False)
+        # Select T indices:
+        T = R[0:batch_size]
+        Y = caption_train_subset[T, :]
+        # For each sampled point xj calculate G*j
+        output_G = caption_embedder(Y.todense()).numpy()  # shape: (T, C)
+        # update
+        G[:, T] = output_G.transpose()  # shape: (C, T)
 
-        # calculate loss values
-        loss_f = f_loss(samples=pairs, all_pairs=image_caption_pairs,
-                        theta_matrix=theta.matrix, F=F.matrix,
-                        G=G.matrix, B=B.matrix, S=S.matrix)
-        loss_g = g_loss(samples=pairs, all_pairs=image_caption_pairs,
-                        theta_matrix=theta.matrix, F=F.matrix,
-                        G=G.matrix, B=B.matrix, S=S.matrix)
+        # calculate the gradient (vectorized implementation assignment)
+        #  - F and G are of shape: (C, D)
+        #  - S is of shape (N, M), with N the nr images and M is the nr captions = image_caption_pairs = D
 
-        print('f loss ({}) -> {}'.format(loss_f.shape, loss_f[0]))
-        print('g loss ({}) -> {}'.format(loss_g.shape, loss_g[0]))
+        G1 = np.matmul(G, np.ones(G.shape[1], dtype=np.int8)).reshape(C, 1)  # shape: (C, 1)
+        theta = 0.5 * np.matmul(F.transpose(), G)  # shape: (D, D)
+        weight = 1 / (1 + np.exp(-theta[:, T]))  # shape: (D, T)
+        part1 = np.matmul(F, weight)  # shape: (C, T)
+        part2 = np.matmul(S[:, T], F)  # shape: should be (C, T), but not possible
+        term1 = 0.5 * (part1 - part2)  # shape: (C, T)  (logloss)
+        term2 = 2 * GAMMA * (F[:, T] - B[:, T]) + 2 * ETA * G1  # shape: (C, T)
+        dj_dg_text = term1 + term2  # shape: (C, T)
 
-        f_loss_sums.append(np.sum(loss_f[0]))
-        g_loss_sums.append(np.sum(loss_g[0]))
+        # update parameters theta_Y by using backprop
 
-        # update weights based on these loss values
-        F.update_weights(loss_f)
-        G.update_weights(loss_g)
 
-        # recalculate sign matrix
-        B.recalculate()
-        print("batch {} done".format(index))
-# %%
-print(B)
-print('samples generated')
+    # 3) update B
+    B = GAMMA * np.sign(F + G)
 
-print('f losses -> {}'.format(f_loss_sums))
-plt.plot(f_loss_sums)
-plt.ylabel('sums of f_loss values')
-plt.show()
-
-print('g losses -> {}'.format(g_loss_sums))
-plt.plot(g_loss_sums)
-plt.ylabel('sums of g_loss values')
-plt.show()
-"""
+    # 4) calculate loss

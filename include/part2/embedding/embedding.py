@@ -10,7 +10,7 @@ def get_image_embedder(input_size, hidden_size=1024, embedding_size=256):
     output = Dense(embedding_size, activation='tanh')(hidden)
     model = Model(inputs=input, outputs=output)
     print('compiling model')
-    model.compile(optimizer='adam', loss='mean_squared_error', metrics=['accuracy'])
+    model.compile(optimizer='adam', loss='mean_squared_error', metrics=['mse'])
     return model
 
 
@@ -20,7 +20,8 @@ def get_caption_embedder(input_size, hidden_size=1024, embedding_size=256):
     hidden = Dense(hidden_size, activation='sigmoid')(input)
     output = Dense(embedding_size, activation='tanh')(hidden)
     model = Model(inputs=input, outputs=output)
-    model.compile(optimizer='adam', loss='mean_squared_error', metrics=['accuracy'])
+    print('compiling model')
+    model.compile(optimizer='adam', loss='mean_squared_error', metrics=['mse'])
     return model
 
 def store_embeder(model, name):
