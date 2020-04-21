@@ -162,7 +162,7 @@ print('G: {}'.format(G_train.matrix.shape))
 # %%
 
 batch_size = 32
-epochs = 5
+epochs = 1
 all_indices = np.arange(len(image_caption_pairs))
 
 f_loss_sums = []
@@ -188,7 +188,8 @@ for j in range(epochs):
         image_embeddings = image_embedder.predict(image_batch)
 
         # update columns with new embeddings
-        np.put(a=F_train.matrix, ind=indices, v=image_embeddings)
+        # np.put(a=F_train.matrix, ind=indices, v=image_embeddings)
+        F_train.matrix[:, indices] = image_embeddings.transpose()
 
         theta_train.recalculate()
 
@@ -198,7 +199,8 @@ for j in range(epochs):
                         G=G_train.matrix, B=B_train.matrix, S=S_train.matrix)
 
         caption_embeddings = caption_embedder.predict(caption_batch.todense())
-        np.put(a=G_train.matrix, ind=indices, v=caption_embeddings)
+        # np.put(a=G_train.matrix, ind=indices, v=caption_embeddings)
+        G_train.matrix[:, indices] = caption_embeddings.transpose()
 
         theta_train.recalculate()
 
@@ -232,6 +234,7 @@ print('g losses -> {}'.format(g_loss_sums))
 plt.plot(g_loss_sums)
 plt.ylabel('sums of g_loss values')
 plt.show()
+
 
 # ------------------------------------------------
 # 4) Test Performance
@@ -323,6 +326,22 @@ caption_embedder = get_caption_embedder(caption_train_subset.shape[1], embedding
 max_iter = 5
 batch_size = 25
 loss = []
+
+# %%
+# %%
+
+D = 250 # number of caption/images pairs
+F1 = np.matmul(F, np.ones(F.shape[1], dtype=np.int8)).reshape(C, 1)  # shape: (C, 1)
+i = 0
+theta = 0.5 * np.matmul(F.transpose(), G)
+for j in range(D):
+    weight = 1/(1 + np.exp(- theta[i, j]))
+    term1 = (weight * G[:, j].reshape(C, 1))
+    term2 = (S[i, j] * G[:, j]).reshape(C, 1)
+    term3 = term1 - term2
+    term4 = 2 * GAMMA * (F[:, i].reshape(C, 1) - B[:, i].reshape(C, 1)) + 2 * ETA * F1
+    dj_df = term3 + term4
+    dj_df += dj_df
 
 # %%
 
