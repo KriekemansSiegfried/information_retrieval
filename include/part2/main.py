@@ -287,6 +287,8 @@ loss = []
 
 # %%
 
+"""
+
 # 3) Train model
 # ------------------------------
 
@@ -354,5 +356,7 @@ for epoch in range(max_iter):
 
     # 3) update B
     B = GAMMA * np.sign(F + G)
-
+    
     # 4) calculate loss
+    
+"""
