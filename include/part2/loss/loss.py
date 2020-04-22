@@ -1,5 +1,6 @@
-from math import exp
+from math import exp, log
 import numpy as np
+from numpy.linalg import norm
 
 
 def weight_factor(row, column, theta_matrix):
@@ -9,6 +10,24 @@ def weight_factor(row, column, theta_matrix):
     """
     theta_val = theta_matrix[row, column]
     return 1 / (1 + exp(-1 * theta_val))
+
+
+def fro(array):
+    """ frobenius norm helper function"""
+    return norm(array, ord='fro')
+
+
+def loss(pairs, S, theta, F, G, B, gamma=1, eta=1):
+    """ calculate loss function from paper"""
+    loss_val = 0
+    l = np.ones(shape=(F.shape[1],))  # column vector
+    for i, j in pairs:
+        part1 = S[i, j] * theta[i, j] - log(1 + exp(theta[i, j]))
+        part2 = gamma * (fro(B - F) + fro(B - G))
+        part3 = eta * (fro(F * l) + fro(G * l))
+        loss_val += part1 + part2 + part3
+    loss_val *= -1
+    return loss_val
 
 
 def f_loss(samples, all_pairs, theta_matrix, F, G, B, S, gamma=1, eta=1):
