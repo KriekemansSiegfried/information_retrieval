@@ -124,6 +124,11 @@ S = matrix.SimilarityMatrix(image_caption_pairs, nr_images, nr_captions).matrix
 # initialize B: shape: (C,D)
 B = GAMMA * np.sign(F + G)
 
+print(f"Dimension F: {F.shape}")
+print(f"Dimension G: {G.shape}")
+print(f"Dimension S: {S.shape}")
+print(f"Dimension B: {B.shape}")
+
 # networks
 image_embedder = get_image_embedder(images_train_subset.shape[1], embedding_size=C)
 caption_embedder = get_caption_embedder(caption_train_subset.shape[1], embedding_size=C)
@@ -238,6 +243,7 @@ print('f_score = ' + str(round(f_score * 100, 3)) + "%")
 print('g_score = ' + str(round(g_score * 100, 3)) + "%")
 
 
+"""
 #%%
 # --------------------------------------------------------------------
 # IMPLEMENTATION BASED ON MATLAB CODE FROM THE PAPER (Vectorized code)
@@ -247,6 +253,48 @@ print('g_score = ' + str(round(g_score * 100, 3)) + "%")
 
 # 1) Read in data and preprocess
 # ------------------------------
+
+# read in image output
+images_train, images_val, images_test = preprocessing.read_split_images(path=PATH)
+
+# %% read in caption output and split in train, validation and test set and save it
+# you don't need to run this if you have already ran this before ==> see next block of code
+captions_train, captions_val, captions_test = preprocessing.read_split_captions(
+    path=PATH, document='results_20130124.token', encoding="utf8", dir=(BASE + "output/data"))
+
+# %% in case you already have ran the cel above once before and don't want to run it over and over
+# train
+captions_train = json.load(open(BASE + 'output/data/train.json', 'r'))
+# val
+captions_val = json.load(open(BASE + 'output/data/val.json', 'r'))
+# test
+captions_test = json.load(open(BASE + 'output/data/test.json', 'r'))
+
+# %% clean captions (don't run this more than once or
+# you will prune your caption dictionary even further as it has the same variable name)
+
+# experiment with it: my experience: seems to work better if you apply stemming when training
+stemming = True
+captions_train = preprocessing.clean_descriptions(
+    descriptions=captions_train, min_word_length=2, stem=stemming, unique_only=False
+)
+captions_val = preprocessing.clean_descriptions(
+    descriptions=captions_val, min_word_length=2, stem=stemming, unique_only=False
+)
+captions_test = preprocessing.clean_descriptions(
+    descriptions=captions_test, min_word_length=2, stem=stemming, unique_only=False
+)
+
+# %% convert to bow
+c_vec = CountVectorizer(stop_words='english', min_df=1, max_df=100000)
+# fit on training output (descriptions)
+
+c_vec.fit(captions_train.values())
+print(f"Size vocabulary: {len(c_vec.vocabulary_)}")
+# transform on train/val/test output
+captions_train_bow = [list(captions_train.keys()), c_vec.transform(captions_train.values())]
+captions_val_bow = [list(captions_val.keys()), c_vec.transform(captions_val.values())]
+captions_test_bow = [list(captions_test.keys()), c_vec.transform(captions_test.values())]
 
 #%%
 # subset data
@@ -277,6 +325,11 @@ S = matrix.SimilarityMatrix(image_caption_pairs, nr_images, nr_captions).matrix
 # initialize B: shape: (C,D)
 B = GAMMA * np.sign(F + G)
 
+print(f"Dimension F: {F.shape}")
+print(f"Dimension G: {G.shape}")
+print(f"Dimension S: {S.shape}")
+print(f"Dimension B: {B.shape}")
+
 # networks
 image_embedder = get_image_embedder(images_train_subset.shape[1], embedding_size=C)
 caption_embedder = get_caption_embedder(caption_train_subset.shape[1], embedding_size=C)
@@ -286,8 +339,6 @@ batch_size = 25
 loss = []
 
 # %%
-
-"""
 
 # 3) Train model
 # ------------------------------
@@ -301,13 +352,13 @@ for epoch in range(max_iter):
 
         # Randomize indices
         R = np.random.choice(nr_images, nr_images, replace=False)
-        # Select T indices:
-        T = R[0:batch_size]
-        X = images_train_subset[T, :]
+        # Select  indices:
+        indices = R[0:batch_size]
+        X = images_train_subset[indices, :]
         # For each sampled point xi calculate F*i
         output_F = image_embedder(X).numpy()  # shape: (T, C)
         # update
-        F[:, T] = output_F.transpose()  # shape: (C, T)
+        F[:, indices] = output_F.transpose()  # shape: (C, T)
 
         # calculate the gradient (vectorized implementation assignment)
         #  - F and G are of shape: (C, D)
@@ -315,11 +366,11 @@ for epoch in range(max_iter):
 
         F1 = np.matmul(F, np.ones(F.shape[1], dtype=np.int8)).reshape(C, 1)  # shape: (C, 1)
         theta = 0.5 * np.matmul(F.transpose(), G)  # shape: (D, D)
-        weight = 1 / (1 + np.exp(-theta[T, :]))  # shape: (T, D)
+        weight = 1 / (1 + np.exp(-theta[indices, :]))  # shape: (T, D)
         part1 = np.matmul(G, weight.transpose())  # shape: (C, T)
-        part2 = np.matmul(G, S[T, :].transpose())  # shape: (C, T)
+        part2 = np.matmul(G, S[indices, :].transpose())  # shape: (C, T)
         term1 = 0.5 * (part1 - part2)  # shape: (C, T)  (logloss)
-        term2 = 2 * GAMMA * (F[:, T] - B[:, T]) + 2 * ETA * F1  # shape: (C, T)
+        term2 = 2 * GAMMA * (F[:, indices] - B[:, indices]) + 2 * ETA * F1  # shape: (C, T)
         dj_df_image = term1 + term2  # shape: (C, T)
 
         # update parameters theta_X by using backprop
@@ -332,7 +383,7 @@ for epoch in range(max_iter):
         R = np.random.choice(nr_captions, nr_captions, replace=False)
         # Select T indices:
         T = R[0:batch_size]
-        Y = caption_train_subset[T, :]
+        Y = caption_train_subset[indices, :]
         # For each sampled point xj calculate G*j
         output_G = caption_embedder(Y.todense()).numpy()  # shape: (T, C)
         # update
@@ -344,11 +395,11 @@ for epoch in range(max_iter):
 
         G1 = np.matmul(G, np.ones(G.shape[1], dtype=np.int8)).reshape(C, 1)  # shape: (C, 1)
         theta = 0.5 * np.matmul(F.transpose(), G)  # shape: (D, D)
-        weight = 1 / (1 + np.exp(-theta[:, T]))  # shape: (D, T)
+        weight = 1 / (1 + np.exp(-theta[:, indices]))  # shape: (D, T)
         part1 = np.matmul(F, weight)  # shape: (C, T)
-        part2 = np.matmul(S[:, T], F)  # shape: should be (C, T), but not possible
+        part2 = np.matmul(S[:, indices], F)  # shape: should be (C, T), but not possible
         term1 = 0.5 * (part1 - part2)  # shape: (C, T)  (logloss)
-        term2 = 2 * GAMMA * (F[:, T] - B[:, T]) + 2 * ETA * G1  # shape: (C, T)
+        term2 = 2 * GAMMA * (F[:, indices] - B[:, indices]) + 2 * ETA * G1  # shape: (C, T)
         dj_dg_text = term1 + term2  # shape: (C, T)
 
         # update parameters theta_Y by using backprop
@@ -359,4 +410,5 @@ for epoch in range(max_iter):
     
     # 4) calculate loss
     
-"""
+    """
+
