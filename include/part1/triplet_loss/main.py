@@ -32,8 +32,9 @@ from include.part1.triplet_loss.ranking import ranking
 
 # %% GLOBAL VARIABLES (indicated in CAPITAL letters)
 PATH = "include/input/"
-MODEL_JSON_PATH = 'include/output/models/triplet_loss/best_model.json'
-MODEL_WEIGHTS_PATH = 'include/output/models/triplet_loss/best_model.h5'
+SAVE_FIGURES = 'include/output/figures/triplet_loss/'
+MODEL_JSON_PATH = 'include/output/model/triplet_loss/best_model.json'
+MODEL_WEIGHTS_PATH = 'include/output/model/triplet_loss/best_model.h5'
 sns.set()
 # %% read in image output
 image_train, image_val, image_test = preprocessing.read_split_images(path=PATH)
@@ -77,7 +78,7 @@ caption_val_bow = [list(caption_val.keys()), c_vec.transform(caption_val.values(
 caption_test_bow = [list(caption_test.keys()), c_vec.transform(caption_test.values())]
 
 # %% train
-n_images_train = 5000
+n_images_train = 1000
 caption_id_train, dataset_train, labels_train = preprocessing.convert_to_triplet_dataset(
     captions=caption_train_bow, images=image_train, captions_k=5,
     p=100, n_row=n_images_train, todense=True
@@ -107,13 +108,13 @@ model = network.get_network_triplet_loss(
     caption_size=caption_feature_size, image_size=image_feature_size,
     embedding_size=512, triplet_margin=10, optimizer=custom_optimizer
 )
-
+# %%
 print('network loaded')
 model_json = model.to_json()
 with open(MODEL_JSON_PATH, 'w') as json_file:
     json_file.write(model_json)
 
-plot_model(model, to_file='include/output/figures/triplet_loss/architecture.png',
+plot_model(model, to_file=SAVE_FIGURES+'architecture.png',
            show_shapes=True, show_layer_names=True)
 
 # %%
@@ -129,7 +130,8 @@ callbacks = [EarlyStopping(monitor='val_loss', patience=10),
 real_epochs = 10
 batch_size = 256
 model.fit(
-    dataset_train, labels_train,
+    x=dataset_train,
+    y=labels_train,
     epochs=real_epochs,
     batch_size=batch_size,
     validation_data=(dataset_val, labels_val),
@@ -149,7 +151,7 @@ plt.ylim([0, 20])
 plt.legend()
 plt.show()
 
-# %%
+# %% Import best trained caption and image model
 caption_model, image_model = load_model.load_submodels(
     model_path=MODEL_JSON_PATH, weights_path=MODEL_WEIGHTS_PATH
 )

@@ -71,8 +71,8 @@ captions_test = json.load(open(BASE + 'output/data/test.json', 'r'))
 
 # %% clean captions (don't run this more than once or
 # you will prune your caption dictionary even further as it has the same variable name)
-
 # experiment with it: my experience: seems to work better if you apply stemming when training
+
 stemming = True
 captions_train = preprocessing.clean_descriptions(
     descriptions=captions_train, min_word_length=2, stem=stemming, unique_only=False
