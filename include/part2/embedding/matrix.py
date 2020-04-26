@@ -35,6 +35,7 @@ class EmbeddingMatrix(Matrix):
         return value
         # return value * (1 - value)
 
+
     def update_weights(self, loss_value):
         """
         This function implements backpropagation based on the given loss value

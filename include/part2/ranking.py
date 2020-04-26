@@ -69,8 +69,10 @@ def mean_average_precision(captions, images, captions_per_image=1):
     f_score = 0.0
     g_score = 0.0
     nr_captions, nr_images = len(captions[0]), len(images[0])
-    caption_matrix = captions[1].round()
-    image_matrix = images[1].round()
+    # caption_matrix = captions[1].round()
+    # image_matrix = images[1].round()
+    caption_matrix = np.sign(captions[1]) * np.ones((captions[1].shape[0], captions[1].shape[1]))
+    image_matrix = np.sign(images[1]) * np.ones((images[1].shape[0], images[1].shape[1]))
 
     # -----------------------------------------------------------------------------
     # perform mAP_10 on captions_predictions

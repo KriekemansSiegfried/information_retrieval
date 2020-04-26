@@ -1,7 +1,7 @@
 # data pre processing
 import numpy as np
 from include.part2 import ranking
-from numpy.random import  permutation
+from numpy.random import permutation
 from sklearn.feature_extraction.text import CountVectorizer
 import json
 from math import ceil
@@ -12,7 +12,7 @@ import seaborn as sns
 
 # own functions
 from include.preprocess_data import preprocessing
-from include.part2.embedding.embedding import get_caption_embedder, get_image_embedder
+from include.part2.embedding import embedding
 from include.part2.embedding import matrix
 from include.part2.loss.loss import f_loss, g_loss
 
@@ -122,7 +122,7 @@ image_idx = np.repeat(np.arange(0, nr_images, 1), repeats=captions_per_image).to
 caption_idx = np.arange(0, nr_captions, 1).tolist()
 image_caption_pairs = [(image_idx[i], caption_idx[i]) for i in range(len(image_idx))]
 S_dummi = matrix.SimilarityMatrix(image_caption_pairs, nr_images, nr_captions).matrix
-S = np.zeros((nr_captions,nr_captions))
+S = np.zeros((nr_captions, nr_captions))
 for j in range(nr_captions):
     S[j, :] = S_dummi[int(j/captions_per_image), :]
 
@@ -130,8 +130,8 @@ for j in range(nr_captions):
 B = GAMMA * np.sign(F + G)
 
 # networks
-image_embedder = get_image_embedder(images_train_subset.shape[1], embedding_size=C)
-caption_embedder = get_caption_embedder(caption_train_subset.shape[1], embedding_size=C)
+image_embedder = embedding.get_image_embedder(images_train_subset.shape[1], embedding_size=C)
+caption_embedder = embedding.get_caption_embedder(caption_train_subset.shape[1], embedding_size=C)
 
 epochs = 5
 N_x = 25  # batchsize
@@ -144,11 +144,16 @@ loss = []
 #    NOTE: this is not efficient code, but let's first focus on getting
 #    this right before looking at efficiency
 # -------------------------------------------------------------------------------------------
+origional_captions_input = caption_embedder.predict(caption_train_subset.todense())
+origional_images_input = image_embedder.predict(images_train_subset)
 
 for epoch in range(epochs):
     print(epoch)
     # 1) loop for images (X)
     for b in range(ceil(nr_images / N_x)):
+
+        # prev_weights = image_embedder.get_weights()
+
         # Randomize indices
         R = np.random.choice(nr_images, nr_images, replace=False)
         # Randomly sample N_x points from X to construct mminibatch
@@ -157,25 +162,25 @@ for epoch in range(epochs):
         # 1.1) For each sampled point xi in the minibatch calculate F*i by forward propagation
         # 1.2) calculate the derivative according to 3
         dj_df_T = np.zeros((C, 1))
+        # F1 = sum of the columns of F = F x (np.ones((F.shape[1], 1)) (Note: our F is transpose(F))
         F1 = F.sum(axis=1).reshape(C, 1)
         # theta = 0.5 * np.matmul(F.transpose(), G)
         theta = 0.5 * np.matmul(G.transpose(), F)
         for index_mb, i in enumerate(T):
-            # embedding_F, shape: (1, C)
+            # embedding_F = prediction of the network for mini_batch_X[index_mb, :], shape is (1, C)
             embedding_F = image_embedder(mini_batch_X[index_mb, :].reshape(1, mini_batch_X.shape[1])).numpy()
             # only use flatten if F[:,i] is of shape C, 1
             F[:, i] = embedding_F.transpose().flatten()  # F shape: (C, T)
             # initialize matrix to store gradients shape: (C, 1)
             """--new version--"""
-            # F1 = sum of the columns of F = F x (np.ones((F.shape[1], 1)) (Note: our F is transpose(F))
-            F1 = F.sum(axis=1).reshape(C, 1)
             # 0.5*SUM((sigma[i,j] - S[i,j])*G[:,j]) + 2*gamma*(F[:,i]-B[:,i]) + 2*eta*F1
             # <=> 0.5*(sigma[i,:] - S[i,:])*G + term0  (thus term0 = 2*gamma*(F[:,i]-B[:,i]) + 2*eta*F1)
             #                                          (the was sum also removed and performed on all columns in one go)
             # <=> 0.5*s_weights*G + term0              (thus s_weights = (sigma[i,:] - S[i,:])
             #                                          (and sigma[i,:] = 1/(1+exp(theta[i,:])))
             term0 = 2 * GAMMA * (F[:, i].reshape(C, 1) - B[:, i].reshape(C, 1)) + 2 * ETA * F1
-            s_weights = (1 / (1 + np.exp(- theta[i, :]))) - S[i, :]
+            # s_weights = (1 / (1 + np.exp(- theta[i, :]))) - S[i, :]
+            s_weights = (1 / (1 + np.exp(- theta[:, i]))) - S[i, :]
             total = 0.5*s_weights*G + term0
             dj_df_D = total.sum(axis=1).reshape(C, 1)
             dj_df_T = dj_df_T + dj_df_D
@@ -193,7 +198,15 @@ for epoch in range(epochs):
                 dj_df_D = dj_df_D + total
             dj_df_T = dj_df_T + 0.5 * dj_df_D
                --old version--"""
-        # 1.3) update the parameters theta_X by using back propagation (TODO)
+        # 1.3) update the parameters theta_X by using back propagation
+        new_weights = embedding.backprop_weights(image_embedder, dj_df_T)
+        image_embedder.set_weights(new_weights)
+        # new_weights = image_embedder.get_weights()
+        # print('difference: ')
+        # for i in range(len(new_weights)):
+        #     print(new_weights[i] - prev_weights[i])
+
+
 
     # 2) loop for images (captions)
     for b in range(ceil(nr_captions / N_y)):
@@ -214,7 +227,7 @@ for epoch in range(epochs):
             G[:, j] = embedding_G.transpose().flatten()  # G shape: (C, T)
             # initialize matrix to store gradients shape: (C, 1)
             """--new version--"""
-            G1 = G.sum(axis=1).reshape(C, 1)
+            # G1 = G.sum(axis=1).reshape(C, 1)
             term0 = 2 * GAMMA * (G[:, j].reshape(C, 1) - B[:, j].reshape(C, 1)) + 2 * ETA * G1
             s_weights = (1 / (1 + np.exp(- theta[:, j]))) - S[j, :]
             total = 0.5*s_weights*F + term0
@@ -234,13 +247,37 @@ for epoch in range(epochs):
                 dj_dg_D = dj_dg_D + total
             dj_dg_T = dj_dg_T + 0.5 * dj_dg_D
                --old version--"""
-        # 2.3) update the parameters theta_Y by using back propagation (TODO)
+        # 2.3) update the parameters theta_Y by using back propagation
+        new_weights = embedding.backprop_weights(caption_embedder, dj_dg_T)
+        caption_embedder.set_weights(new_weights)
 
     # 3) update B
     B = GAMMA * np.sign(F + G)
 
     # 4) calculate loss (TODO)
+"""
+# testing if predictions have changed
+new_captions_input = caption_embedder.predict(caption_train_subset.todense())
+new_images_input = image_embedder.predict(images_train_subset)
 
+dif = new_captions_input == origional_captions_input
+if dif.all():
+    print('caption predictions did not change')
+else:
+    print('caption predictions did change:')
+    for i in range(len(dif)):
+        if not dif[i].all():
+            print('index ' + str(i) + ': ' + str(origional_captions_input[i, :]) + ' -> ' + str(new_captions_input[i, :]))
+print('\n\n\n')
+dif = new_images_input == origional_images_input
+if dif.all():
+    print('image predictions did not change')
+else:
+    print('image predictions did change:')
+    for i in range(len(dif)):
+        if not dif[i].all():
+            print('index ' + str(i) + ': ' + str(origional_images_input[i, :]) + ' -> ' + str(new_images_input[i, :]))
+"""
 # %%
 
 # ------------------------------------------------
@@ -269,6 +306,7 @@ print('g_score = ' + str(round(g_score * 100, 3)) + "%")
 
 
 # testing performance on test data
+"""
 print('testing performance on testing data')
 nr_images = images_test.shape[0]
 nr_captions = nr_images * captions_per_image
@@ -292,6 +330,11 @@ f_score, g_score = ranking.mean_average_precision(captions, images, captions_per
 print('performance on testing data: ')
 print('f_score = ' + str(round(f_score * 100, 3)) + "%")
 print('g_score = ' + str(round(g_score * 100, 3)) + "%")
+"""
+
+
+""" everything above this line is part of this class, do not forget to outcomment performance testing on test set!   """
+
 
 #%%
 # --------------------------------------------------------------------
