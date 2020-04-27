@@ -102,6 +102,62 @@ def backprop_weights(model, gradients, learning_rate=0.001):
     return new_weights[::-1]
 
 
+def advanced_backprop_weights(model, inputs, gradients, learning_rate=0.001):
+    weights = model.get_weights()
+    for i in range(len(weights)):
+        try:
+            _ = weights[i].shape[1]
+        except IndexError:
+            weights[i] = weights[i].reshape((weights[i].shape[0], 1))
+
+    node_values = []
+    node_values.append(inputs)
+    for layer_weights in weights[:-1]:
+        if layer_weights.shape[1] == 1:
+            values = node_values[-1] + np.matmul(np.ones((1, layer_weights.shape[0])), layer_weights)
+            node_values.append(values)
+        else:
+            x, y = node_values[-1].shape[0], node_values[-1].shape[1]
+            previous_layer_out = np.minimum(node_values[-1], np.ones((x, y)))
+            values = np.matmul(np.maximum(previous_layer_out, np.zeros((x, y))), layer_weights)
+            node_values.append(values)
+
+
+    gradients = gradients.reshape((gradients.shape[0], 1))
+    # Normalize gradients and retrieve weights
+    # gradients = gradients / max(gradients)
+    new_weights = []
+    weights = weights[::-1]
+    node_values = node_values[::-1]
+    for layer in range(len(weights)):
+        layer_weights = weights[layer]
+        values = node_values[layer]
+        nodes_in_this_layer = gradients.shape[0]
+        nodes_in_next_layer = layer_weights.shape[1]
+        if nodes_in_next_layer == 1:
+            new_weights.append(layer_weights + learning_rate*gradients)
+        else:
+            values = values.sum(axis=0).reshape((1, values.shape[1]))
+            gradients = np.transpose(np.matmul(gradients, values))
+            new_weights.append(layer_weights + learning_rate*gradients)
+            gradients = gradients.sum(axis=1).reshape((gradients.shape[0], 1))
+
+    for w in range(len(new_weights)):
+        new_w = new_weights[w]
+        if new_w.shape[1] == 1:
+            new_w = np.squeeze(Normalizer(norm='l2').fit_transform(new_w))
+            new_w = new_w.reshape((new_w.shape[0],))
+            # elif new_w.shape[0] == 1:  # this case should not happen under normal circumstances
+            # print('something wrong')
+            # new_w = np.transpose(new_w)
+            # new_w = np.squeeze(Normalizer(norm='l2').fit_transform(new_w))
+            # new_w = new_w.reshape((new_w.shape[0],))
+        else:
+            new_w = Normalizer(norm='l2').fit_transform(new_w)
+        new_weights[w] = new_w
+    # model.set_weights(new_weights[::-1])
+    return new_weights[::-1]
+
 
 
 

@@ -151,9 +151,6 @@ for epoch in range(epochs):
     print(epoch)
     # 1) loop for images (X)
     for b in range(ceil(nr_images / N_x)):
-
-        # prev_weights = image_embedder.get_weights()
-
         # Randomize indices
         R = np.random.choice(nr_images, nr_images, replace=False)
         # Randomly sample N_x points from X to construct mminibatch
@@ -199,12 +196,8 @@ for epoch in range(epochs):
             dj_df_T = dj_df_T + 0.5 * dj_df_D
                --old version--"""
         # 1.3) update the parameters theta_X by using back propagation
-        new_weights = embedding.backprop_weights(image_embedder, dj_df_T)
+        new_weights = embedding.advanced_backprop_weights(image_embedder, mini_batch_X, - dj_df_T/N_x)
         image_embedder.set_weights(new_weights)
-        # new_weights = image_embedder.get_weights()
-        # print('difference: ')
-        # for i in range(len(new_weights)):
-        #     print(new_weights[i] - prev_weights[i])
 
 
 
@@ -248,7 +241,9 @@ for epoch in range(epochs):
             dj_dg_T = dj_dg_T + 0.5 * dj_dg_D
                --old version--"""
         # 2.3) update the parameters theta_Y by using back propagation
-        new_weights = embedding.backprop_weights(caption_embedder, dj_dg_T)
+        # new_weights = embedding.backprop_weights(caption_embedder, dj_dg_T)
+        new_weights = embedding.advanced_backprop_weights(caption_embedder, mini_batch_Y, - dj_dg_T/N_y)
+        # old_weights = caption_embedder.get_weights()
         caption_embedder.set_weights(new_weights)
 
     # 3) update B
