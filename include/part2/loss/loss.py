@@ -1,4 +1,6 @@
 from math import exp, log
+
+import torch
 import numpy as np
 from numpy.linalg import norm
 
@@ -10,6 +12,11 @@ def weight_factor(row, column, theta_matrix):
     """
     theta_val = theta_matrix[row, column]
     return 1 / (1 + exp(-1 * theta_val))
+
+
+def weight_factor_torch(row, column, theta):
+    theta_val = theta[row, column]
+    return 1 / (1 + torch.exp(-1 * theta_val))
 
 
 def fro(array):
@@ -27,6 +34,28 @@ def loss(pairs, S, theta, F, G, B, gamma=1, eta=1):
         part3 = eta * (fro(F * l) + fro(G * l))
         loss_val += part1 + part2 + part3
     loss_val *= -1
+    return loss_val
+
+
+def f_loss_torch(batch, pairs, theta, F, G, B, S, gamma=1, eta=1):
+    loss_val = 0
+    L = torch.ones(F.shape[1])
+    for image_index in batch:
+        # calculate first factor
+        factor1 = 0
+        for (pair_image_index, pair_caption_index) in pairs:
+            first_val = weight_factor_torch(image_index, pair_caption_index, theta) * G[pair_caption_index, :]
+            second_val = S[image_index, pair_caption_index] * G[pair_caption_index, :]
+            factor1 += (first_val - second_val)
+        factor1 /= 2
+
+        # calculate second factor
+        factor2 = 2 * gamma * (F[image_index, :] - B[image_index, :])
+
+        # calculate third factor
+        factor3 = 2 * eta * torch.matmul(L, F)
+
+        loss_val += (factor1 + factor2 + factor3)
     return loss_val
 
 
