@@ -147,8 +147,6 @@ image_caption_pairs = np.array([(image_idx[i], caption_idx[i]) for i in range(le
 # Define torch variable containing similarity information of captions and images
 S = Variable(torch.from_numpy(matrix.SimilarityMatrix(image_caption_pairs, nr_images, nr_captions).matrix))
 
-print(S)
-
 # F and G: shape (C, D) where D is the number of image_caption pairs
 
 F_buffer = torch.randn(nr_captions, C)
@@ -157,17 +155,19 @@ G_buffer = torch.randn(nr_captions, C)
 # initialize B: shape: (C,D)
 B = torch.sign(F_buffer + G_buffer)
 
-image_train_subset = np.repeat(a=images_train.iloc[0:nr_images, 1:].values, repeats=5, axis=0)
+image_test_subset = np.repeat(a=images_test.iloc[0:nr_images, 1:].values, repeats=5, axis=0)
+image_train_subset = np.repeat(a=images_train.iloc[0:1000, 1:].values, repeats=5, axis=0)
 
 caption_train_subset = captions_train_bow[1][0:nr_captions, :]
+caption_test_subset = captions_test_bow[1][0:5000, :]
 
 # networks
 image_embedder = Embedder(image_train_subset.shape[1], C)
 caption_embedder = Embedder(caption_train_subset.shape[1], C)
 
 # TODO: optimize lr value
-image_optimizer = SGD(image_embedder.parameters(), lr=0.01)
-caption_optimizer = SGD(caption_embedder.parameters(), lr=0.01)
+image_optimizer = SGD(image_embedder.parameters(), lr=0.005)
+caption_optimizer = SGD(caption_embedder.parameters(), lr=0.005)
 
 batch_size = 50
 epochs = 25
@@ -234,7 +234,7 @@ for epoch in range(epochs):
         batch_captions = Variable(torch.from_numpy(caption_train_subset[batch_indices, :]))
 
         # TODO: is this correct?
-        sim = S[:, batch_indices].t()
+        sim = S[batch_indices, :]
 
         batch_text_embedding = caption_embedder(batch_captions)
         G_buffer[batch_indices, :] = batch_text_embedding
