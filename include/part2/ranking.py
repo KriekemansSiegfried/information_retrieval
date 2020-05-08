@@ -26,11 +26,18 @@ def find_lowest(values, nr):
     for index in range(nr, len(values)):
         value = values[index]
         if value < current_worst:
-            j = 0
+            j = 1
             while value < current_values[j]:
                 j += 1
-
-
+            if j == 10:
+                current_values = current_values[1:9] + [value]
+                indexes = indexes[1:9] + [index]
+            elif j == 1:
+                current_values = [value] + current_values[1:9]
+                indexes = [index] + indexes[1:9]
+            else:
+                current_values = current_values[1:j] + [value] + current_values[j:9]
+                indexes = indexes[1:j] + [index] + indexes[j:9]
     return np.flip(indexes)
 
 
@@ -69,8 +76,8 @@ def mean_average_precision(captions, images, captions_per_image=1):
     nr_captions, nr_images = len(captions[0]), len(images[0])
     # caption_matrix = captions[1].round()
     # image_matrix = images[1].round()
-    caption_matrix = np.sign(captions[1])# * np.ones((captions[1].shape[0], captions[1].shape[1]))
-    image_matrix = np.sign(images[1])# * np.ones((images[1].shape[0], images[1].shape[1]))
+    caption_matrix = np.sign(captions[1])
+    image_matrix = np.sign(images[1])
     image_matrix = image_matrix[::captions_per_image]
 
     # -----------------------------------------------------------------------------
@@ -99,7 +106,7 @@ def mean_average_precision(captions, images, captions_per_image=1):
 
     # -----------------------------------------------------------------------------
     # perform mAP_10 on image_predictions
-    distances = np.zeros(nr_captions, dtype=np.int)
+    distances = np.zeros(nr_captions, dtype=np.float)
     for j in range(nr_images):
         image = images[0][j]
         feature = image_matrix[j, :]
@@ -109,19 +116,17 @@ def mean_average_precision(captions, images, captions_per_image=1):
             distances[i] = hamming(caption_matrix[i, :], feature)
 
             # retrieve the 10 best scoring images
-        indexes = find_lowest(distances, 10)
+        indexes = find_lowest_sk(distances, 10)
         nearest_10 = [captions[0][i] for i in indexes]
 
         # check if expected result is in nearest_10, and if so, add to the score
         for p in range(10):
             if nearest_10[p] == image:
                 g_score += (1 / (p + 1))
-                if captions_per_image == 1:
-                    break
     quotient = 0
     for i in range(captions_per_image):
         quotient += nr_images/(i + 1)
-    g_score = g_score / quotient
+    g_score = g_score / nr_images
 
     return f_score, g_score
 

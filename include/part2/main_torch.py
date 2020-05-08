@@ -35,6 +35,14 @@ def calc_neighbor(label1, label2):
     # calculate the similar matrix
     return label1.matmul(label2.transpose(0, 1)) > 0
 
+def calc_loss(B, F, G, Sim, gamma, eta):
+    theta = torch.matmul(F, G.transpose(0, 1)) / 2
+    term1 = torch.sum(torch.log(1 + torch.exp(theta)) - Sim * theta)
+    term2 = torch.sum(torch.pow(B - F, 2) + torch.pow(B - G, 2))
+    term3 = torch.sum(torch.pow(F.sum(dim=0), 2) + torch.pow(G.sum(dim=0), 2))
+    loss = term1 + gamma * term2 + eta * term3
+    return loss
+
 
 """
 Parameters:
@@ -126,6 +134,8 @@ image_caption_pairs = np.array([(image_idx[i], caption_idx[i]) for i in range(le
 # Define torch variable containing similarity information of captions and images
 S = Variable(torch.from_numpy(matrix.SimilarityMatrix(image_caption_pairs, nr_images, nr_captions).matrix))
 
+print(S)
+
 # F and G: shape (C, D) where D is the number of image_caption pairs
 
 F_buffer = torch.randn(nr_captions, C)
@@ -136,7 +146,6 @@ B = torch.sign(F_buffer + G_buffer)
 
 image_train_subset = np.repeat(a=images_train.iloc[0:nr_images, 1:].values, repeats=5, axis=0)
 
-
 caption_train_subset = captions_train_bow[1][0:nr_captions, :]
 
 # networks
@@ -144,11 +153,11 @@ image_embedder = Embedder(image_train_subset.shape[1], C)
 caption_embedder = Embedder(caption_train_subset.shape[1], C)
 
 # TODO: optimize lr value
-image_optimizer = SGD(image_embedder.parameters(), lr=0.01)
-caption_optimizer = SGD(caption_embedder.parameters(), lr=0.1)
+image_optimizer = SGD(image_embedder.parameters(), lr=0.0001)
+caption_optimizer = SGD(caption_embedder.parameters(), lr=0.0001)
 
 batch_size = 50
-epochs = 1
+epochs = 100
 data_size = nr_images * captions_per_image
 
 ones_batch = torch.ones(batch_size)
@@ -156,9 +165,10 @@ ones_other = torch.ones(data_size - batch_size)
 
 x_loss_values = []
 y_loss_values = []
+loss_values = []
 
 for epoch in range(epochs):
-    print('Starting epoch {}'.format(epoch))
+    print('Starting epoch {}'.format(epoch + 1))
     # image update loop
     for i in range(data_size // batch_size):
         # get random set of indices as batch
@@ -166,7 +176,6 @@ for epoch in range(epochs):
         other_indices = np.setdiff1d(range(data_size), batch_indices)
 
         batch_images = Variable(torch.from_numpy(image_train_subset[batch_indices, :]))
-        batch_labels = S[batch_indices, :]
 
         # TODO: is this correct?
         sim = Variable(S[batch_indices, :])
@@ -188,7 +197,7 @@ for epoch in range(epochs):
             torch.matmul(batch_image_embedding.t(), ones_batch_var) + torch.matmul(F[other_indices].t(),
                                                                                    ones_other_var), 2))
         loss_x = logloss_x + GAMMA * quantization_x + ETA * balance_x
-        loss_x /= (batch_size * data_size)
+        loss_x /= (batch_size * nr_images)
 
         x_loss_values.append(loss_x.detach().numpy().item())
 
@@ -210,10 +219,9 @@ for epoch in range(epochs):
         other_indices = np.setdiff1d(range(data_size), batch_indices)
 
         batch_captions = Variable(torch.from_numpy(caption_train_subset.todense()[batch_indices, :]))
-        batch_labels = image_caption_pairs[batch_indices, :]
 
         # TODO: is this correct?
-        sim = S[batch_indices, :]
+        sim = S[:, batch_indices].t()
 
         batch_text_embedding = caption_embedder(batch_captions)
         G_buffer[batch_indices, :] = batch_text_embedding
@@ -230,7 +238,7 @@ for epoch in range(epochs):
             torch.matmul(batch_text_embedding.t(), ones_batch_var) + torch.matmul(G[other_indices].t(), ones_other_var),
             2))
         loss_y = logloss_y + GAMMA * quantization_y + ETA * balance_y
-        loss_y /= (batch_size * data_size)
+        loss_y /= (batch_size * nr_captions)
 
         y_loss_values.append(loss_y.detach().numpy().item())
 
@@ -243,6 +251,11 @@ for epoch in range(epochs):
     # update sign matrix
     B = torch.sign(F_buffer + G_buffer)
 
+    loss_epoch =calc_loss(B,F,G,S,GAMMA, ETA)
+    loss_values.append(loss_epoch)
+    print('epoch loss: {}'.format(loss_epoch))
+
+
 # ------------------------------------------------
 # 4) Test Performance
 # ------------------------------------------------
@@ -251,12 +264,15 @@ print('testing performance on training data')
 
 x_val_labels = [i for i in range(0, len(x_loss_values))]
 y_val_labels = [i for i in range(0, len(y_loss_values))]
+loss_labels = [i for i in range(0, len(loss_values))]
 
 sns.set()
 sns.lineplot(x=x_val_labels, y=x_loss_values)
 plt.show()
 sns.lineplot(x=y_val_labels, y=y_loss_values)
 plt.show()
+# sns.lineplot(x=loss_labels, y=loss_values)
+# plt.show()
 image_names_c = list()
 image_names_i = list()
 for i in range(nr_images):
@@ -275,5 +291,5 @@ captions = [image_names_c, captions_input]
 images = [image_names_i, images_input]
 f_score, g_score = ranking.mean_average_precision(captions, images, captions_per_image=captions_per_image)
 print('performance on training data: ')
-print('f_score = ' + str(round(f_score * 100, 3)) + "%")
-print('g_score = ' + str(round(g_score * 100, 3)) + "%")
+print('f_score = %.3f' + f_score * 100 + "%")
+print('g_score = %.3f' + g_score + "%")
