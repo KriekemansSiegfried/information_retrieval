@@ -1,5 +1,10 @@
 import numpy as np
 from scipy.spatial.distance import hamming
+from heapq import nsmallest
+
+def find_lowest_sk(values, nr):
+    smallest = nsmallest(nr, enumerate(values), key=lambda x: x[1])
+    return map(lambda x: x[0], smallest)
 
 
 def find_lowest(values, nr):
@@ -21,18 +26,11 @@ def find_lowest(values, nr):
     for index in range(nr, len(values)):
         value = values[index]
         if value < current_worst:
-            j = 1
+            j = 0
             while value < current_values[j]:
                 j += 1
-            if j == 10:
-                current_values = current_values[1:9] + [value]
-                indexes = indexes[1:9] + [index]
-            elif j == 1:
-                current_values = [value] + current_values[1:9]
-                indexes = [index] + indexes[1:9]
-            else:
-                current_values = current_values[1:j] + [value] + current_values[j:9]
-                indexes = indexes[1:j] + [index] + indexes[j:9]
+
+
     return np.flip(indexes)
 
 
@@ -71,22 +69,23 @@ def mean_average_precision(captions, images, captions_per_image=1):
     nr_captions, nr_images = len(captions[0]), len(images[0])
     # caption_matrix = captions[1].round()
     # image_matrix = images[1].round()
-    caption_matrix = np.sign(captions[1]) * np.ones((captions[1].shape[0], captions[1].shape[1]))
-    image_matrix = np.sign(images[1]) * np.ones((images[1].shape[0], images[1].shape[1]))
+    caption_matrix = np.sign(captions[1])# * np.ones((captions[1].shape[0], captions[1].shape[1]))
+    image_matrix = np.sign(images[1])# * np.ones((images[1].shape[0], images[1].shape[1]))
+    image_matrix = image_matrix[::captions_per_image]
 
     # -----------------------------------------------------------------------------
     # perform mAP_10 on captions_predictions
-    distances = np.zeros(nr_images, dtype=np.int)
+    distances = np.zeros(nr_images, dtype=np.float)
     for j in range(nr_captions):
         image = captions[0][j]
         caption = caption_matrix[j, :]
 
         # calculate the distances from the prediction to individual images
         for i in range(nr_images):
-            distances[i] = hamming(image_matrix[i, :], caption)
+            distances[i] = hamming(image_matrix[i,:], caption)
 
         # retrieve the 10 best scoring images
-        indexes = find_lowest(distances, 10)
+        indexes = find_lowest_sk(distances, 10)
         nearest_10 = [images[0][i] for i in indexes]
 
         # check if expected result is in nearest_10, and if so, add to the score

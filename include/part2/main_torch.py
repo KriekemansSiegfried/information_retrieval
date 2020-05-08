@@ -7,10 +7,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import torch
+from scipy.sparse.linalg import svds
 from torch.autograd import Variable
 from torch.optim import SGD
 
 from include.part2.loss.loss import f_loss_torch
+from include.part2.torch_embedding.caption_embedder import CaptionEmbedder
 from include.part2.torch_embedding.embedder import Embedder
 from numpy.random import permutation
 from sklearn.feature_extraction.text import CountVectorizer
@@ -133,17 +135,20 @@ G_buffer = torch.randn(nr_captions, C)
 B = torch.sign(F_buffer + G_buffer)
 
 image_train_subset = np.repeat(a=images_train.iloc[0:nr_images, 1:].values, repeats=5, axis=0)
+
+
 caption_train_subset = captions_train_bow[1][0:nr_captions, :]
+
 # networks
 image_embedder = Embedder(image_train_subset.shape[1], C)
 caption_embedder = Embedder(caption_train_subset.shape[1], C)
 
 # TODO: optimize lr value
 image_optimizer = SGD(image_embedder.parameters(), lr=0.01)
-caption_optimizer = SGD(caption_embedder.parameters(), lr=0.01)
+caption_optimizer = SGD(caption_embedder.parameters(), lr=0.1)
 
 batch_size = 50
-epochs = 5
+epochs = 1
 data_size = nr_images * captions_per_image
 
 ones_batch = torch.ones(batch_size)
@@ -151,8 +156,6 @@ ones_other = torch.ones(data_size - batch_size)
 
 x_loss_values = []
 y_loss_values = []
-
-
 
 for epoch in range(epochs):
     print('Starting epoch {}'.format(epoch))
