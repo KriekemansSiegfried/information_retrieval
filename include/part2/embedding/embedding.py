@@ -1,7 +1,8 @@
-from tensorflow_core.python.keras import Input, Model
-from tensorflow_core.python.keras.layers import Dense
 from sklearn.preprocessing import Normalizer
 import numpy as np
+from tensorflow.python.keras import Input, Model
+from tensorflow.python.keras.layers import Dense
+
 
 
 def get_image_embedder(input_size, hidden_size=1024, embedding_size=256):

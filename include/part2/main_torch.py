@@ -4,6 +4,7 @@ from math import ceil
 
 import numpy as np
 # visualization
+import matplotlib.pyplot as plt
 import seaborn as sns
 import torch
 from torch.autograd import Variable
@@ -138,23 +139,25 @@ image_embedder = Embedder(image_train_subset.shape[1], C)
 caption_embedder = Embedder(caption_train_subset.shape[1], C)
 
 # TODO: optimize lr value
-image_optimizer = SGD(image_embedder.parameters(), lr=0.001)
-caption_optimizer = SGD(caption_embedder.parameters(), lr=0.001)
+image_optimizer = SGD(image_embedder.parameters(), lr=0.01)
+caption_optimizer = SGD(caption_embedder.parameters(), lr=0.01)
 
-batch_size = 25
-epochs = 5
+batch_size = 5
+epochs = 50
 data_size = nr_images * captions_per_image
 
 ones_batch = torch.ones(batch_size)
 ones_other = torch.ones(data_size - batch_size)
 
-for epoch in range(epochs):
+x_loss_values = []
+y_loss_values = []
 
+for epoch in range(epochs):
+    print('Starting epoch {}'.format(epoch))
     # image update loop
-    for i in range(nr_images // batch_size):
+    for i in range(data_size // batch_size):
         # get random set of indices as batch
         batch_indices = np.random.permutation(data_size)[:batch_size]
-        print('batch_indices : {}'.format(batch_indices))
         other_indices = np.setdiff1d(range(data_size), batch_indices)
 
         batch_images = Variable(torch.from_numpy(image_train_subset[batch_indices, :]))
@@ -173,13 +176,28 @@ for epoch in range(epochs):
         ones_batch_var = Variable(ones_batch)
         ones_other_var = Variable(ones_other)
 
-        theta_x = 1.0 / 2 * torch.matmul(G,F.t())
+        theta_x = 1.0 / 2 * torch.matmul(batch_image_embedding, F.t())
+        logloss_x = -torch.sum(sim * theta_x - torch.log(1.0 + torch.exp(theta_x)))
+        quantization_x = torch.sum(torch.pow(B_var[batch_indices, :] - batch_image_embedding, 2))
+        balance_x = torch.sum(torch.pow(
+            torch.matmul(batch_image_embedding.t(), ones_batch_var) + torch.matmul(G[other_indices].t(),
+                                                                                   ones_other_var), 2))
+        loss_x = logloss_x + GAMMA * quantization_x + ETA * balance_x
+        loss_x /= (batch_size * data_size)
 
-        image_gradients = f_loss_torch(batch_indices, image_caption_pairs, theta_x, F, G, B, S)
+        x_loss_values.append(loss_x.detach().numpy().item())
+
+        # print('x loss {}'.format(loss_x.detach().numpy().item()))
+
         image_optimizer.zero_grad()
-        print('backprop')
-        batch_image_embedding.backward(image_gradients)
+        loss_x.backward()
         image_optimizer.step()
+
+        parameters = image_embedder.parameters()
+        params = []
+        for param in parameters:
+            params.append(param)
+        # print('iter done')
 
     for i in range(data_size // batch_size):
         # get random set of indices as batch
@@ -189,21 +207,29 @@ for epoch in range(epochs):
         batch_captions = Variable(torch.from_numpy(caption_train_subset.todense()[batch_indices, :]))
         batch_labels = image_caption_pairs[batch_indices, :]
 
-        # calc current calculated similarity
+        # TODO: is this correct?
         sim = S[batch_indices, :]
 
         batch_text_embedding = caption_embedder(batch_captions)
         G_buffer[batch_indices, :] = batch_text_embedding
         F = Variable(F_buffer)
         G = Variable(G_buffer)
+        B_var = Variable(B)
+        ones_batch_var = Variable(ones_batch)
+        ones_other_var = Variable(ones_other)
 
         theta_y = 1.0 / 2 * torch.matmul(batch_text_embedding, F.t())
         logloss_y = -torch.sum(sim * theta_y - torch.log(1.0 + torch.exp(theta_y)))
-        quantization_y = torch.sum(torch.pow(B[batch_indices, :] - batch_text_embedding, 2))
+        quantization_y = torch.sum(torch.pow(B_var[batch_indices, :] - batch_text_embedding, 2))
         balance_y = torch.sum(torch.pow(
-            torch.matmul(batch_text_embedding.t(), ones_batch) + torch.matmul(G[other_indices].t(), ones_other), 2))
+            torch.matmul(batch_text_embedding.t(), ones_batch_var) + torch.matmul(G[other_indices].t(), ones_other_var),
+            2))
         loss_y = logloss_y + GAMMA * quantization_y + ETA * balance_y
         loss_y /= (batch_size * data_size)
+
+        y_loss_values.append(loss_y.detach().numpy().item())
+
+        # print('y loss {}'.format(loss_y.detach().numpy().item()))
 
         caption_optimizer.zero_grad()
         loss_y.backward()
@@ -218,6 +244,14 @@ for epoch in range(epochs):
 # testing performance on training data
 print('testing performance on training data')
 
+x_val_labels = [i for i in range(0, len(x_loss_values))]
+y_val_labels = [i for i in range(0, len(y_loss_values))]
+
+sns.set()
+sns.lineplot(x=x_val_labels, y=x_loss_values)
+plt.show()
+sns.lineplot(x=y_val_labels, y=y_loss_values)
+plt.show()
 image_names_c = list()
 image_names_i = list()
 for i in range(nr_images):
@@ -226,12 +260,15 @@ for j in range(captions_per_image):
     image_names_c.append(name)
 image_names_i.append(name)
 
-captions_input = caption_embedder.predict(caption_train_subset.todense())
-images_input = image_embedder.predict(image_train_subset)
+captions_input = caption_embedder(torch.from_numpy(caption_train_subset.todense()))
+images_input = image_embedder(torch.from_numpy(image_train_subset))
+
+captions_input = captions_input.detach().numpy()
+images_input = images_input.detach().numpy()
 
 captions = [image_names_c, captions_input]
 images = [image_names_i, images_input]
-f_score, g_score = ranking.mean_average_precision(captions, images, captions_per_image=captions_per_image)
+# f_score, g_score = ranking.mean_average_precision(captions, images, captions_per_image=captions_per_image)
 print('performance on training data: ')
-print('f_score = ' + str(round(f_score * 100, 3)) + "%")
-print('g_score = ' + str(round(g_score * 100, 3)) + "%")
+# print('f_score = ' + str(round(f_score * 100, 3)) + "%")
+# print('g_score = ' + str(round(g_score * 100, 3)) + "%")

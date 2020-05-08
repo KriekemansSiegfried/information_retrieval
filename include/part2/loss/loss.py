@@ -39,7 +39,7 @@ def loss(pairs, S, theta, F, G, B, gamma=1, eta=1):
 
 def f_loss_torch(batch, pairs, theta, F, G, B, S, gamma=1, eta=1):
     loss_val = 0
-    L = torch.ones(F.shape[1])
+    L = torch.ones(F.shape[0])
     for image_index in batch:
         # calculate first factor
         factor1 = 0

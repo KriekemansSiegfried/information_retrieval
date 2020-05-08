@@ -13,7 +13,7 @@ from include.networks import network
 from tensorflow.keras import optimizers
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 from tensorflow.keras.callbacks import ReduceLROnPlateau
-from tensorflow_core.python.keras.utils.vis_utils import plot_model
+from tensorflow.python.keras.utils.vis_utils import plot_model
 
 # own modules
 from include.part1.triplet_loss.load_model import get_embedding
@@ -38,10 +38,10 @@ MODEL_WEIGHTS_PATH = 'include/output/model/triplet_loss/best_model.h5'
 sns.set()
 # %% read in image output
 image_train, image_val, image_test = preprocessing.read_split_images(path=PATH)
-
-# %% read in caption output and split in train, validation and test set and save it
-caption_train, caption_val, caption_test = preprocessing.read_split_captions(
-    path=PATH, document='results_20130124.token', encoding="utf8", dir="include/output/data")
+#
+# # %% read in caption output and split in train, validation and test set and save it
+# caption_train, caption_val, caption_test = preprocessing.read_split_captions(
+#     path=PATH, document='results_20130124.token', encoding="utf8", dir="include/output/data")
 
 # %% in case you already have ran the cel above once before and don't want to run it over and over
 # train
@@ -56,15 +56,15 @@ caption_test = json.load(open('include/output/data/test.json', 'r'))
 
 # experiment with it: my experience: seems to work better when training
 stemming = True
-caption_train = preprocessing.clean_descriptions(
-    descriptions=caption_train, min_word_length=2, stem=stemming, unique_only=False
-)
-caption_val = preprocessing.clean_descriptions(
-    descriptions=caption_val, min_word_length=2, stem=stemming, unique_only=False
-)
-caption_test = preprocessing.clean_descriptions(
-    descriptions=caption_test, min_word_length=2, stem=stemming, unique_only=False
-)
+# caption_train = preprocessing.clean_descriptions(
+#     descriptions=caption_train, min_word_length=2, stem=stemming, unique_only=False
+# )
+# caption_val = preprocessing.clean_descriptions(
+#     descriptions=caption_val, min_word_length=2, stem=stemming, unique_only=False
+# )
+# caption_test = preprocessing.clean_descriptions(
+#     descriptions=caption_test, min_word_length=2, stem=stemming, unique_only=False
+# )
 
 # %% convert to bow
 c_vec = CountVectorizer(stop_words='english', min_df=1, max_df=100000)
@@ -78,14 +78,14 @@ caption_val_bow = [list(caption_val.keys()), c_vec.transform(caption_val.values(
 caption_test_bow = [list(caption_test.keys()), c_vec.transform(caption_test.values())]
 
 # %% train
-n_images_train = 1000
+n_images_train = 5000
 caption_id_train, dataset_train, labels_train = preprocessing.convert_to_triplet_dataset(
     captions=caption_train_bow, images=image_train, captions_k=5,
     p=100, n_row=n_images_train, todense=True
 )
 
 # %% validation
-n_images_val = 1000
+n_images_val = 500
 caption_id_val, dataset_val, labels_val = preprocessing.convert_to_triplet_dataset(
     captions=caption_val_bow, images=image_val, captions_k=5, p=25, n_row=n_images_val, todense=True
 )
@@ -106,7 +106,7 @@ custom_optimizer = optimizers.Adam(
 )
 model = network.get_network_triplet_loss(
     caption_size=caption_feature_size, image_size=image_feature_size,
-    embedding_size=512, triplet_margin=10, optimizer=custom_optimizer
+    embedding_size=512, triplet_margin=100, optimizer=custom_optimizer
 )
 # %%
 print('network loaded')
@@ -127,7 +127,7 @@ callbacks = [EarlyStopping(monitor='val_loss', patience=10),
                              verbose=1, save_best_only=True, mode='min'), reduce_lr]
 
 # %%
-real_epochs = 10
+real_epochs = 15
 batch_size = 256
 model.fit(
     x=dataset_train,
@@ -147,7 +147,7 @@ plt.plot(np.arange(1, real_epochs + 1, 1), model.history.history['loss'], 'g-', 
 plt.plot(np.arange(1, real_epochs + 1, 1), model.history.history['val_loss'], 'r-', label='validation')
 plt.xlabel("Epochs")
 plt.ylabel("Triplet loss")
-plt.ylim([0, 20])
+plt.ylim([0, 120])
 plt.legend()
 plt.show()
 

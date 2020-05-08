@@ -1,6 +1,6 @@
 import numpy as np
 from sklearn.preprocessing import Normalizer
-from tensorflow_core.python.keras import backend
+from tensorflow.python.keras import backend
 from scipy.sparse import csr_matrix
 
 
@@ -124,6 +124,6 @@ class SimilarityMatrix(Matrix):
 
     def __init__(self, pairs, nr_images, nr_captions):
         super().__init__()
-        self.matrix = np.zeros(shape=(nr_images, nr_captions), dtype=np.int8)
+        self.matrix = np.zeros(shape=(nr_captions, nr_captions), dtype=np.int8)
         for (index_image, index_caption) in pairs:
             self.matrix[index_image, index_caption] = 1  # value is 1 if pair exists AKA image and caption are similar
