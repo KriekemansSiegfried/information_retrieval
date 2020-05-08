@@ -113,7 +113,7 @@ captions_test_bow = [list(captions_test.keys()), c_vec.transform(captions_test.v
 # 2) Initialize matrices: F, G, B, S
 # ----------------------------------
 
-nr_images = 50
+nr_images = 500
 captions_per_image = 5
 nr_captions = nr_pairs = nr_images * captions_per_image
 
@@ -142,8 +142,8 @@ caption_embedder = Embedder(caption_train_subset.shape[1], C)
 image_optimizer = SGD(image_embedder.parameters(), lr=0.01)
 caption_optimizer = SGD(caption_embedder.parameters(), lr=0.01)
 
-batch_size = 5
-epochs = 50
+batch_size = 50
+epochs = 5
 data_size = nr_images * captions_per_image
 
 ones_batch = torch.ones(batch_size)
@@ -151,6 +151,8 @@ ones_other = torch.ones(data_size - batch_size)
 
 x_loss_values = []
 y_loss_values = []
+
+
 
 for epoch in range(epochs):
     print('Starting epoch {}'.format(epoch))
@@ -176,11 +178,11 @@ for epoch in range(epochs):
         ones_batch_var = Variable(ones_batch)
         ones_other_var = Variable(ones_other)
 
-        theta_x = 1.0 / 2 * torch.matmul(batch_image_embedding, F.t())
+        theta_x = 1.0 / 2 * torch.matmul(batch_image_embedding, G.t())
         logloss_x = -torch.sum(sim * theta_x - torch.log(1.0 + torch.exp(theta_x)))
         quantization_x = torch.sum(torch.pow(B_var[batch_indices, :] - batch_image_embedding, 2))
         balance_x = torch.sum(torch.pow(
-            torch.matmul(batch_image_embedding.t(), ones_batch_var) + torch.matmul(G[other_indices].t(),
+            torch.matmul(batch_image_embedding.t(), ones_batch_var) + torch.matmul(F[other_indices].t(),
                                                                                    ones_other_var), 2))
         loss_x = logloss_x + GAMMA * quantization_x + ETA * balance_x
         loss_x /= (batch_size * data_size)
@@ -256,9 +258,9 @@ image_names_c = list()
 image_names_i = list()
 for i in range(nr_images):
     name = captions_test_bow[0][i * captions_per_image][: -2]
-for j in range(captions_per_image):
-    image_names_c.append(name)
-image_names_i.append(name)
+    for j in range(captions_per_image):
+        image_names_c.append(name)
+    image_names_i.append(name)
 
 captions_input = caption_embedder(torch.from_numpy(caption_train_subset.todense()))
 images_input = image_embedder(torch.from_numpy(image_train_subset))
@@ -268,7 +270,7 @@ images_input = images_input.detach().numpy()
 
 captions = [image_names_c, captions_input]
 images = [image_names_i, images_input]
-# f_score, g_score = ranking.mean_average_precision(captions, images, captions_per_image=captions_per_image)
+f_score, g_score = ranking.mean_average_precision(captions, images, captions_per_image=captions_per_image)
 print('performance on training data: ')
-# print('f_score = ' + str(round(f_score * 100, 3)) + "%")
-# print('g_score = ' + str(round(g_score * 100, 3)) + "%")
+print('f_score = ' + str(round(f_score * 100, 3)) + "%")
+print('g_score = ' + str(round(g_score * 100, 3)) + "%")
