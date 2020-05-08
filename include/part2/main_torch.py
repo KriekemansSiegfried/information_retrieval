@@ -9,7 +9,7 @@ import seaborn as sns
 import torch
 from scipy.sparse.linalg import svds
 from torch.autograd import Variable
-from torch.optim import SGD
+from torch.optim import SGD, Adam
 
 from include.part2.loss.loss import f_loss_torch
 from include.part2.torch_embedding.caption_embedder import CaptionEmbedder
@@ -25,6 +25,8 @@ from include.preprocess_data import preprocessing
 
 # %% GLOBAL VARIABLES (indicated in CAPITAL letters)
 # BASE = "include/"
+from include.preprocess_data.word2vec import convert_to_word2vec
+
 BASE = ""
 PATH = BASE + "input/"
 
@@ -34,6 +36,7 @@ sns.set()
 def calc_neighbor(label1, label2):
     # calculate the similar matrix
     return label1.matmul(label2.transpose(0, 1)) > 0
+
 
 def calc_loss(B, F, G, Sim, gamma, eta):
     theta = torch.matmul(F, G.transpose(0, 1)) / 2
@@ -111,12 +114,22 @@ stemming = True
 c_vec = CountVectorizer(stop_words='english', min_df=1, max_df=100000)
 # fit on training output (descriptions)
 
-c_vec.fit(captions_train.values())
-print(f"Size vocabulary: {len(c_vec.vocabulary_)}")
-# transform on train/val/test output
-captions_train_bow = [list(captions_train.keys()), c_vec.transform(captions_train.values())]
-captions_val_bow = [list(captions_val.keys()), c_vec.transform(captions_val.values())]
-captions_test_bow = [list(captions_test.keys()), c_vec.transform(captions_test.values())]
+caption_train_keys = captions_train.keys()
+caption_test_keys = captions_test.keys()
+captions_val_keys = captions_val.keys()
+
+captions_train, captions_test, captions_val = convert_to_word2vec((captions_train, captions_val, captions_test))
+
+captions_train_bow = [list(caption_train_keys), captions_train]
+captions_val_bow = [list(captions_val_keys), captions_val]
+captions_test_bow = [list(caption_test_keys), captions_test]
+
+# c_vec.fit(captions_train.values())
+# print(f"Size vocabulary: {len(c_vec.vocabulary_)}")
+# # transform on train/val/test output
+# captions_train_bow = [list(captions_train.keys()), c_vec.transform(captions_train.values())]
+# captions_val_bow = [list(captions_val.keys()), c_vec.transform(captions_val.values())]
+# captions_test_bow = [list(captions_test.keys()), c_vec.transform(captions_test.values())]
 
 # %%
 # ----------------------------------
@@ -153,11 +166,11 @@ image_embedder = Embedder(image_train_subset.shape[1], C)
 caption_embedder = Embedder(caption_train_subset.shape[1], C)
 
 # TODO: optimize lr value
-image_optimizer = SGD(image_embedder.parameters(), lr=0.0001)
-caption_optimizer = SGD(caption_embedder.parameters(), lr=0.0001)
+image_optimizer = SGD(image_embedder.parameters(), lr=0.01)
+caption_optimizer = SGD(caption_embedder.parameters(), lr=0.01)
 
 batch_size = 50
-epochs = 100
+epochs = 25
 data_size = nr_images * captions_per_image
 
 ones_batch = torch.ones(batch_size)
@@ -194,16 +207,16 @@ for epoch in range(epochs):
         logloss_x = -torch.sum(sim * theta_x - torch.log(1.0 + torch.exp(theta_x)))
         quantization_x = torch.sum(torch.pow(B_var[batch_indices, :] - batch_image_embedding, 2))
         balance_x = torch.sum(torch.pow(
-            torch.matmul(batch_image_embedding.t(), ones_batch_var) + torch.matmul(F[other_indices].t(),
-                                                                                   ones_other_var), 2))
+            torch.matmul(batch_image_embedding.t(), ones_batch) + torch.matmul(F[other_indices].t(),
+                                                                               ones_other), 2))
         loss_x = logloss_x + GAMMA * quantization_x + ETA * balance_x
-        loss_x /= (batch_size * nr_images)
+        loss_x /= (data_size)
 
         x_loss_values.append(loss_x.detach().numpy().item())
 
         # print('x loss {}'.format(loss_x.detach().numpy().item()))
 
-        image_optimizer.zero_grad()
+        image_embedder.zero_grad()
         loss_x.backward()
         image_optimizer.step()
 
@@ -218,7 +231,7 @@ for epoch in range(epochs):
         batch_indices = np.random.permutation(data_size)[:batch_size]
         other_indices = np.setdiff1d(range(data_size), batch_indices)
 
-        batch_captions = Variable(torch.from_numpy(caption_train_subset.todense()[batch_indices, :]))
+        batch_captions = Variable(torch.from_numpy(caption_train_subset[batch_indices, :]))
 
         # TODO: is this correct?
         sim = S[:, batch_indices].t()
@@ -238,7 +251,7 @@ for epoch in range(epochs):
             torch.matmul(batch_text_embedding.t(), ones_batch_var) + torch.matmul(G[other_indices].t(), ones_other_var),
             2))
         loss_y = logloss_y + GAMMA * quantization_y + ETA * balance_y
-        loss_y /= (batch_size * nr_captions)
+        loss_y /= (data_size)
 
         y_loss_values.append(loss_y.detach().numpy().item())
 
@@ -251,10 +264,9 @@ for epoch in range(epochs):
     # update sign matrix
     B = torch.sign(F_buffer + G_buffer)
 
-    loss_epoch =calc_loss(B,F,G,S,GAMMA, ETA)
+    loss_epoch = calc_loss(B, F_buffer, G_buffer, S, GAMMA, ETA)
     loss_values.append(loss_epoch)
     print('epoch loss: {}'.format(loss_epoch))
-
 
 # ------------------------------------------------
 # 4) Test Performance
@@ -281,7 +293,7 @@ for i in range(nr_images):
         image_names_c.append(name)
     image_names_i.append(name)
 
-captions_input = caption_embedder(torch.from_numpy(caption_train_subset.todense()))
+captions_input = caption_embedder(torch.from_numpy(caption_train_subset))
 images_input = image_embedder(torch.from_numpy(image_train_subset))
 
 captions_input = captions_input.detach().numpy()
@@ -291,5 +303,5 @@ captions = [image_names_c, captions_input]
 images = [image_names_i, images_input]
 f_score, g_score = ranking.mean_average_precision(captions, images, captions_per_image=captions_per_image)
 print('performance on training data: ')
-print('f_score = %.3f' + f_score * 100 + "%")
-print('g_score = %.3f' + g_score + "%")
+print('f_score = ' + str(f_score * 100) + "%")
+print('g_score = ' + str(g_score * 100) + "%")
