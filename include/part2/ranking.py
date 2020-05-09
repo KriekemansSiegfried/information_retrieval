@@ -126,7 +126,7 @@ def mean_average_precision(captions, images, captions_per_image=1):
     quotient = 0
     for i in range(captions_per_image):
         quotient += nr_images/(i + 1)
-    g_score = g_score / nr_images
+    g_score = g_score / quotient
 
     return f_score, g_score
 

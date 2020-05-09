@@ -1,9 +1,7 @@
 import gensim
 from nltk import word_tokenize
 import numpy as np
-
 import nltk
-
 nltk.download('punkt')
 
 

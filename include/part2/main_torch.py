@@ -1,59 +1,52 @@
-# data pre processing
+# -------------------------------------------------------------------------------------------------------------
+#  %% 0) Load libraries
+# -------------------------------------------------------------------------------------------------------------
+
+# data manipulations
 import json
 from math import ceil
-
 import numpy as np
-# visualization
-import matplotlib.pyplot as plt
-import seaborn as sns
-import torch
 from scipy.sparse.linalg import svds
-from torch.autograd import Variable
-from torch.optim import SGD, Adam
-
-from include.part2.loss.loss import f_loss_torch
-from include.part2.torch_embedding.caption_embedder import CaptionEmbedder
-from include.part2.torch_embedding.embedder import Embedder
 from numpy.random import permutation
 from sklearn.feature_extraction.text import CountVectorizer
 
+# visualization
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# pytorch
+import torch
+from torch.autograd import Variable
+from torch.optim import SGD, Adam
+
+# own functions
+from include.preprocess_data import preprocessing
+from include.preprocess_data.word2vec import convert_to_word2vec
+# from include.part2.loss.loss import f_loss_torch
+# from include.part2.torch_embedding.caption_embedder import CaptionEmbedder
+from include.part2.torch_embedding.embedder import Embedder
 from include.part2 import ranking
 from include.part2.embedding import embedding
 from include.part2.embedding import matrix
-# own functions
-from include.preprocess_data import preprocessing
 
-# %% GLOBAL VARIABLES (indicated in CAPITAL letters)
-# BASE = "include/"
-from include.preprocess_data.word2vec import convert_to_word2vec
+# %%
+# -------------------------------------------------------------------------------------------------------------
+#  %% 1) GLOBAL VARIABLES (indicated in CAPITAL letters)
+# -------------------------------------------------------------------------------------------------------------
 
-BASE = ""
+BASE = "include/"  # check your own path
 PATH = BASE + "input/"
 
-sns.set()
-
-
-def calc_neighbor(label1, label2):
-    # calculate the similar matrix
-    return label1.matmul(label2.transpose(0, 1)) > 0
-
-
-def calc_loss(B, F, G, Sim, gamma, eta):
-    theta = torch.matmul(F, G.transpose(0, 1)) / 2
-    term1 = torch.sum(torch.log(1 + torch.exp(theta)) - Sim * theta)
-    term2 = torch.sum(torch.pow(B - F, 2) + torch.pow(B - G, 2))
-    term3 = torch.sum(torch.pow(F.sum(dim=0), 2) + torch.pow(G.sum(dim=0), 2))
-    loss = term1 + gamma * term2 + eta * term3
-    return loss
-
-
-"""
-Parameters:
-"""
+# Parameters (given in the assignment)
 GAMMA = 1
 ETA = 1
 C = 32
+
+# plotting
+sns.set()
+
 """
+
 Training loop:
 
 1. Create neural networks for image and caption embedding
@@ -69,15 +62,29 @@ Training loop:
 #        - make it work on new captions (to showcase) --> IS PART OF SEARCH ENGINE
 #        - look at efficiency and fine-tuning (partially done)
 #        - fix multiple captions per images and vice versa (see footnote assingment)
-#        -
 #        - DONE: perform map10 on testing data
 #        - DONE: perform map10 on testing data
+
+
+#%%
+def calc_neighbor(label1, label2):
+    # calculate the similar matrix
+    return label1.matmul(label2.transpose(0, 1)) > 0
+
+
+def calc_loss(B, F, G, Sim, gamma, eta):
+    theta = torch.matmul(F, G.transpose(0, 1)) / 2
+    term1 = torch.sum(torch.log(1 + torch.exp(theta)) - Sim * theta)
+    term2 = torch.sum(torch.pow(B - F, 2) + torch.pow(B - G, 2))
+    term3 = torch.sum(torch.pow(F.sum(dim=0), 2) + torch.pow(G.sum(dim=0), 2))
+    loss = term1 + gamma * term2 + eta * term3
+    return loss
 
 
 # %%
-# ------------------------------
-# 1) Read in data and preprocess
-# ------------------------------
+# -------------------------------------------------------------------------------------------------------------
+# 2) Read in data and preprocess
+# -------------------------------------------------------------------------------------------------------------
 
 # read in image output
 images_train, images_val, images_test = preprocessing.read_split_images(path=PATH)
@@ -99,7 +106,7 @@ captions_test = json.load(open(BASE + 'output/data/test.json', 'r'))
 # you will prune your caption dictionary even further as it has the same variable name)
 
 # experiment with it: my experience: seems to work better if you apply stemming when training
-stemming = True
+# stemming = True
 # captions_train = preprocessing.clean_descriptions(
 #     descriptions=captions_train, min_word_length=2, stem=stemming, unique_only=False
 # )
@@ -110,9 +117,19 @@ stemming = True
 #     descriptions=captions_test, min_word_length=2, stem=stemming, unique_only=False
 # )
 
-# %% convert to bow
-c_vec = CountVectorizer(stop_words='english', min_df=1, max_df=100000)
+# %% convert to bow vectors
+
+# c_vec = CountVectorizer(stop_words='english', min_df=1, max_df=100000)
 # fit on training output (descriptions)
+# c_vec.fit(captions_train.values())
+# print(f"Size vocabulary: {len(c_vec.vocabulary_)}")
+
+# # transform on train/val/test output
+# captions_train_vec = [list(captions_train.keys()), c_vec.transform(captions_train.values())]
+# captions_val_vec = [list(captions_val.keys()), c_vec.transform(captions_val.values())]
+# captions_test_vec = [list(captions_test.keys()), c_vec.transform(captions_test.values())]
+
+# %% convert to word2 vectors
 
 caption_train_keys = captions_train.keys()
 caption_test_keys = captions_test.keys()
@@ -120,27 +137,20 @@ captions_val_keys = captions_val.keys()
 
 captions_train, captions_test, captions_val = convert_to_word2vec((captions_train, captions_val, captions_test))
 
-captions_train_bow = [list(caption_train_keys), captions_train]
-captions_val_bow = [list(captions_val_keys), captions_val]
-captions_test_bow = [list(caption_test_keys), captions_test]
-
-# c_vec.fit(captions_train.values())
-# print(f"Size vocabulary: {len(c_vec.vocabulary_)}")
-# # transform on train/val/test output
-# captions_train_bow = [list(captions_train.keys()), c_vec.transform(captions_train.values())]
-# captions_val_bow = [list(captions_val.keys()), c_vec.transform(captions_val.values())]
-# captions_test_bow = [list(captions_test.keys()), c_vec.transform(captions_test.values())]
+captions_train_vec = [list(caption_train_keys), captions_train]
+captions_val_vec = [list(captions_val_keys), captions_val]
+captions_test_vec = [list(caption_test_keys), captions_test]
 
 # %%
-# ----------------------------------
-# 2) Initialize matrices: F, G, B, S
-# ----------------------------------
+# -------------------------------------------------------------------------------------------------------------
+# 3) Initialize matrices: F, G, B, S
+# -------------------------------------------------------------------------------------------------------------
 
-nr_images = 500
+nr_images = 500  # only on a subset of the data
 captions_per_image = 5
 nr_captions = nr_pairs = nr_images * captions_per_image
 
-# Create similarity (S) matrix of shape (N*M) where N is the number of images and M is the number of captions
+# Create similarity (S) matrix of shape (M*M) where  M is the number of captions
 image_idx = np.repeat(np.arange(0, nr_images, 1), repeats=captions_per_image).tolist()
 caption_idx = np.arange(0, nr_captions, 1).tolist()
 image_caption_pairs = np.array([(image_idx[i], caption_idx[i]) for i in range(len(image_idx))])
@@ -148,7 +158,6 @@ image_caption_pairs = np.array([(image_idx[i], caption_idx[i]) for i in range(le
 S = Variable(torch.from_numpy(matrix.SimilarityMatrix(image_caption_pairs, nr_images, nr_captions).matrix))
 
 # F and G: shape (C, D) where D is the number of image_caption pairs
-
 F_buffer = torch.randn(nr_captions, C)
 G_buffer = torch.randn(nr_captions, C)
 
@@ -158,10 +167,13 @@ B = torch.sign(F_buffer + G_buffer)
 image_test_subset = np.repeat(a=images_test.iloc[0:nr_images, 1:].values, repeats=5, axis=0)
 image_train_subset = np.repeat(a=images_train.iloc[0:1000, 1:].values, repeats=5, axis=0)
 
-caption_train_subset = captions_train_bow[1][0:nr_captions, :]
-caption_test_subset = captions_test_bow[1][0:5000, :]
+caption_train_subset = captions_train_vec[1][0:nr_captions, :]
+caption_test_subset = captions_train_vec[1][0:5000, :]
 
-# networks
+# %%
+# -------------------------------------------------------------------------------------------------------------
+# 4) Load networks and train
+# -------------------------------------------------------------------------------------------------------------
 image_embedder = Embedder(image_train_subset.shape[1], C)
 caption_embedder = Embedder(caption_train_subset.shape[1], C)
 
@@ -179,6 +191,8 @@ ones_other = torch.ones(data_size - batch_size)
 x_loss_values = []
 y_loss_values = []
 loss_values = []
+
+# %%  Training loop
 
 for epoch in range(epochs):
     print('Starting epoch {}'.format(epoch + 1))
@@ -268,9 +282,10 @@ for epoch in range(epochs):
     loss_values.append(loss_epoch)
     print('epoch loss: {}'.format(loss_epoch))
 
-# ------------------------------------------------
-# 4) Test Performance
-# ------------------------------------------------
+# %%
+# -------------------------------------------------------------------------------------------------------------
+# 5 ) Test Performance
+# -------------------------------------------------------------------------------------------------------------
 # testing performance on training data
 print('testing performance on training data')
 
@@ -285,10 +300,12 @@ sns.lineplot(x=y_val_labels, y=y_loss_values)
 plt.show()
 # sns.lineplot(x=loss_labels, y=loss_values)
 # plt.show()
+
+# %%
 image_names_c = list()
 image_names_i = list()
 for i in range(nr_images):
-    name = captions_test_bow[0][i * captions_per_image][: -2]
+    name = captions_train_vec[0][i * captions_per_image][: -2]
     for j in range(captions_per_image):
         image_names_c.append(name)
     image_names_i.append(name)
