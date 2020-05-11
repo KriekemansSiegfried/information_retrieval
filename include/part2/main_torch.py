@@ -6,6 +6,7 @@
 import json
 from math import ceil
 import numpy as np
+from scipy.linalg import block_diag
 from scipy.sparse.linalg import svds
 from numpy.random import permutation
 from sklearn.feature_extraction.text import CountVectorizer
@@ -146,16 +147,15 @@ captions_test_vec = [list(caption_test_keys), captions_test]
 # 3) Initialize matrices: F, G, B, S
 # -------------------------------------------------------------------------------------------------------------
 
+
 nr_images = 500  # only on a subset of the data
 captions_per_image = 5
-nr_captions = nr_pairs = nr_images * captions_per_image
+nr_captions = nr_images * captions_per_image
 
-# Create similarity (S) matrix of shape (M*M) where  M is the number of captions
-image_idx = np.repeat(np.arange(0, nr_images, 1), repeats=captions_per_image).tolist()
-caption_idx = np.arange(0, nr_captions, 1).tolist()
-image_caption_pairs = np.array([(image_idx[i], caption_idx[i]) for i in range(len(image_idx))])
 # Define torch variable containing similarity information of captions and images
-S = Variable(torch.from_numpy(matrix.SimilarityMatrix(image_caption_pairs, nr_images, nr_captions).matrix))
+block = np.ones(captions_per_image**2).reshape(captions_per_image, captions_per_image)
+S = Variable(torch.from_numpy((np.kron(np.eye(nr_images, dtype=int), block))))
+
 
 # F and G: shape (C, D) where D is the number of image_caption pairs
 F_buffer = torch.randn(nr_captions, C)
