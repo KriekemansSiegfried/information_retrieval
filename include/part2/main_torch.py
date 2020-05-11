@@ -164,11 +164,10 @@ G_buffer = torch.randn(nr_captions, C)
 # initialize B: shape: (C,D)
 B = torch.sign(F_buffer + G_buffer)
 
-image_test_subset = np.repeat(a=images_test.iloc[0:nr_images, 1:].values, repeats=5, axis=0)
-image_train_subset = np.repeat(a=images_train.iloc[0:1000, 1:].values, repeats=5, axis=0)
-
+# take a smaller part of the data = nr_images
+image_train_subset = np.repeat(a=images_train.iloc[0:nr_images, 1:].values, repeats=5, axis=0)
 caption_train_subset = captions_train_vec[1][0:nr_captions, :]
-caption_test_subset = captions_train_vec[1][0:5000, :]
+
 
 # %%
 # -------------------------------------------------------------------------------------------------------------
@@ -181,8 +180,8 @@ caption_embedder = Embedder(caption_train_subset.shape[1], C)
 image_optimizer = SGD(image_embedder.parameters(), lr=0.005)
 caption_optimizer = SGD(caption_embedder.parameters(), lr=0.005)
 
-batch_size = 50
-epochs = 25
+batch_size = 64
+epochs = 50
 data_size = nr_images * captions_per_image
 
 ones_batch = torch.ones(batch_size)
@@ -279,27 +278,31 @@ for epoch in range(epochs):
     B = torch.sign(F_buffer + G_buffer)
 
     loss_epoch = calc_loss(B, F_buffer, G_buffer, S, GAMMA, ETA)
-    loss_values.append(loss_epoch)
+    loss_values.append(loss_epoch.data)
     print('epoch loss: {}'.format(loss_epoch))
 
 # %%
 # -------------------------------------------------------------------------------------------------------------
 # 5 ) Test Performance
 # -------------------------------------------------------------------------------------------------------------
+
+# santiy check
+print(f"Number of positive bits: {sum(sum(B>0))}")
+print(f"Number of negative bits: {sum(sum(B<0))}")
+
 # testing performance on training data
 print('testing performance on training data')
 
 x_val_labels = [i for i in range(0, len(x_loss_values))]
 y_val_labels = [i for i in range(0, len(y_loss_values))]
-loss_labels = [i for i in range(0, len(loss_values))]
 
 sns.set()
 sns.lineplot(x=x_val_labels, y=x_loss_values)
 plt.show()
 sns.lineplot(x=y_val_labels, y=y_loss_values)
 plt.show()
-# sns.lineplot(x=loss_labels, y=loss_values)
-# plt.show()
+sns.lineplot(x=np.arange(0, epochs), y=np.array(loss_values))
+plt.show()
 
 # %%
 image_names_c = list()
