@@ -15,17 +15,18 @@ def rank_embedding(caption_embed=None,
                    add_correct_id=True,
                    verbose=True):
     """
+    Computes the ranking of either the captions or images
 
-    :param caption_embed:
-    :param caption_id:
-    :param image_embed:
-    :param image_id:
-    :param retrieve:
-    :param k:
-    :param distance_metric:
-    :param add_correct_id:
-    :param verbose:
-    :return:
+    :param caption_embed: Numpy array, embedding (predictions) of the captions
+    :param caption_id: Numpy array, contains the captions id's
+    :param image_embed: Numpy array, embedding (predictions) of the images
+    :param image_id: Numpy array, contains the image id's
+    :param retrieve: String, either "captions" or "images". Default "captions"
+    :param k: Integer, determines how many captions_ids/image_ids to rank. Default is True
+    :param distance_metric: String, computes the distance. Either "L2" or "Hamming". Default is "L2"
+    :param add_correct_id: Boolean, add ranking(s) of the correct caption/image(s). Default is True
+    :param verbose: Boolean, print progress. Default is True
+    :return: Dictionary, contains the ranking with the distances and (optionally) correct_ids
     """
 
     if retrieve == "captions":
@@ -46,23 +47,26 @@ def rank_embedding(caption_embed=None,
     for i, key in enumerate(new_embedding_id):
 
         # compute distances
-        if distance_metric =="L2":
+        if distance_metric == "L2":
             dist = norm(database_features - new_embedding_features[i], ord=2, axis=1)
         elif distance_metric == "Hamming":
             dist = 1 - np.mean((database_features - new_embedding_features[i] == 0), axis=1)
         else:
             print("Choose a listed distance metric: available distance metrics include L2 and Hamming distance")
 
-        # rank indexes small to large
+        # get indices of distances (dist) from low to high
         rank_all = np.argpartition(dist, kth=range(len(dist)))
+        # get distances (low to high)
         dist_all = dist[rank_all].tolist()
         # get 10 lowest distances
         dist_k = dist_all[0:k]
         # get image idx of rank
         if retrieve == "captions":
             ids_k = database_id_original[rank_all[0:k]].tolist()
-        else:
+        elif retrieve == "images":
             ids_k = database_id[rank_all[0:k]].tolist()
+        else:
+            print("error, retrieve should be image or caption")
         # get correct idx and distance
         if add_correct_id:
             idx = list(np.where(key.split(".")[0] == database_id)[0])
@@ -80,12 +84,13 @@ def rank_embedding(caption_embed=None,
     return ranking
 
 
-def average_precision(dic, gtp=1):
+def average_precision(dic=None, gtp=1):
     """
+    Computes the average precision for each caption_id/ image_id
 
-    :param dic:
-    :param gtp:
-    :return:
+    :param dic:, (Nested) Dictionary, contains the ranking with the distances
+    :param gtp: Integer, the number of ground truth positives. Default is 1. For captions this should be 5
+    :return: Pandas DataFrame, containing the average precision for each caption_id/ image_id
     """
 
     # store average precision
@@ -93,11 +98,16 @@ def average_precision(dic, gtp=1):
     print(f"The number of ground true positives is {gtp} when computing the average precision")
     for key, value in dic.items():
 
+        # get the id's of the ranked images/captions
         list_ranking = [item.split(".")[0] for item in value[0]]
 
+        # check if the correct_id'(s) is (are) in the "list_ranking"
         if key.split(".")[0] in list_ranking:
             ap = []
             correct = 0
+            # check the place of the caption_id/image_id in the ranking
+            # see article page 5 for exact reasoning:
+            # https://towardsdatascience.com/breaking-down-mean-average-precision-map-ae462f623a52
             for i, k in enumerate(list_ranking):
                 if k == key.split(".")[0]:
                     correct += 1
@@ -106,6 +116,7 @@ def average_precision(dic, gtp=1):
                     ap.append(0)
 
             store_ap[key] = 1 / gtp * sum(ap)
+
         else:
             store_ap[key] = 0
 

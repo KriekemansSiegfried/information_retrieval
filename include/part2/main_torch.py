@@ -347,6 +347,9 @@ ranking_captions = ranking1.rank_embedding(
     distance_metric="Hamming",
     add_correct_id=True
 )
+# %%
+for key, value in ranking_captions.items():
+    list_ranking = [item.split(".")[0] for item in value[0]]
 
 # %% 3 a) compute MAP@10 images
 average_precision_images = ranking1.average_precision(ranking_images, gtp=1)
