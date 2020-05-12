@@ -19,7 +19,7 @@ from tensorflow.python.keras.utils.vis_utils import plot_model
 from include.part1.triplet_loss.load_model import get_embedding
 from include.part1.triplet_loss.load_model import load_model
 from include.preprocess_data import preprocessing
-from include.part1.triplet_loss.ranking import ranking
+from include.ranking import ranking as ranking
 
 # TODO:
 #  - make generator for sparse matrices: https://stackoverflow.com/questions/37609892/keras-sparse-matrix-issue
@@ -182,6 +182,7 @@ ranking_images = ranking.rank_embedding(
     image_embed=image_embedding,
     image_id=image_id,
     retrieve="images",
+    distance_metric="L2",
     k=10,
     add_correct_id=True
 )
@@ -193,6 +194,7 @@ ranking_captions = ranking.rank_embedding(
     image_embed=image_embedding,
     image_id=image_id,
     retrieve="captions",
+    distance_metric="L2",
     k=10,
     add_correct_id=True
 )

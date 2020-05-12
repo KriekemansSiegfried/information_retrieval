@@ -11,6 +11,7 @@ def rank_embedding(caption_embed=None,
                    image_id=None,
                    retrieve="captions",
                    k=10,
+                   distance_metric="L2",
                    add_correct_id=True,
                    verbose=True):
     """
@@ -21,6 +22,7 @@ def rank_embedding(caption_embed=None,
     :param image_id:
     :param retrieve:
     :param k:
+    :param distance_metric:
     :param add_correct_id:
     :param verbose:
     :return:
@@ -44,7 +46,13 @@ def rank_embedding(caption_embed=None,
     for i, key in enumerate(new_embedding_id):
 
         # compute distances
-        dist = norm(database_features - new_embedding_features[i], ord=2, axis=1)
+        if distance_metric =="L2":
+            dist = norm(database_features - new_embedding_features[i], ord=2, axis=1)
+        elif distance_metric == "Hamming":
+            dist = 1 - np.mean((database_features - new_embedding_features[i] == 0), axis=1)
+        else:
+            print("Choose a listed distance metric: available distance metrics include L2 and Hamming distance")
+
         # rank indexes small to large
         rank_all = np.argpartition(dist, kth=range(len(dist)))
         dist_all = dist[rank_all].tolist()

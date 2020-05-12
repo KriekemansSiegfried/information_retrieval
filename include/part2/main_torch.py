@@ -68,10 +68,6 @@ Training loop:
 
 
 #%%
-def calc_neighbor(label1, label2):
-    # calculate the similar matrix
-    return label1.matmul(label2.transpose(0, 1)) > 0
-
 
 def calc_loss(B, F, G, Sim, gamma, eta):
     theta = torch.matmul(F, G.transpose(0, 1)) / 2
@@ -107,16 +103,16 @@ captions_test = json.load(open(BASE + 'output/data/test.json', 'r'))
 # you will prune your caption dictionary even further as it has the same variable name)
 
 # experiment with it: my experience: seems to work better if you apply stemming when training
-# stemming = True
-# captions_train = preprocessing.clean_descriptions(
-#     descriptions=captions_train, min_word_length=2, stem=stemming, unique_only=False
-# )
-# captions_val = preprocessing.clean_descriptions(
-#     descriptions=captions_val, min_word_length=2, stem=stemming, unique_only=False
-# )
-# captions_test = preprocessing.clean_descriptions(
-#     descriptions=captions_test, min_word_length=2, stem=stemming, unique_only=False
-# )
+stemming = True
+captions_train = preprocessing.clean_descriptions(
+     descriptions=captions_train, min_word_length=2, stem=stemming, unique_only=False
+)
+captions_val = preprocessing.clean_descriptions(
+     descriptions=captions_val, min_word_length=2, stem=stemming, unique_only=False
+)
+captions_test = preprocessing.clean_descriptions(
+     descriptions=captions_test, min_word_length=2, stem=stemming, unique_only=False
+)
 
 # %% convert to bow vectors
 
@@ -181,7 +177,7 @@ image_optimizer = SGD(image_embedder.parameters(), lr=0.005)
 caption_optimizer = SGD(caption_embedder.parameters(), lr=0.005)
 
 batch_size = 64
-epochs = 50
+epochs = 25
 data_size = nr_images * captions_per_image
 
 ones_batch = torch.ones(batch_size)
@@ -283,12 +279,12 @@ for epoch in range(epochs):
 
 # %%
 # -------------------------------------------------------------------------------------------------------------
-# 5 ) Test Performance
+# 5 ) Evaluate training
 # -------------------------------------------------------------------------------------------------------------
 
 # santiy check
-print(f"Number of positive bits: {sum(sum(B>0))}")
-print(f"Number of negative bits: {sum(sum(B<0))}")
+print(f"Number of positive bits: {sum(sum(B > 0))}")
+print(f"Number of negative bits: {sum(sum(B < 0))}")
 
 # testing performance on training data
 print('testing performance on training data')
@@ -304,7 +300,73 @@ plt.show()
 sns.lineplot(x=np.arange(0, epochs), y=np.array(loss_values))
 plt.show()
 
+#%%
+# -------------------------------------------------------------------------------------------------------------
+# 6 ) MAP@10 Performance
+# -------------------------------------------------------------------------------------------------------------
+"""
+A) IMPLEMENTATION 1
+"""
+
+# 1) IMAGES: make predictions
+# only make a prediction for every 5th, image vectors don't change, only captions do
+
+images = Variable(torch.from_numpy(image_train_subset[::5]))
+image_embedding = np.sign(image_embedder(images).data.detach().numpy())
+
+# 2) CAPTIONS: make predictions
+captions = Variable(torch.from_numpy(caption_train_subset))
+caption_embedding = np.sign(caption_embedder(captions).data.detach().numpy())
+
+
+# %% 2) computing ranking images
+from include.ranking import ranking as ranking1
+
+image_id = images_train.iloc[0:nr_images, 0].values
+caption_id = np.array(captions_train_vec[0][0:nr_captions])
+
+ranking_images = ranking1.rank_embedding(
+    caption_embed=caption_embedding,
+    caption_id=caption_id,
+    image_embed=image_embedding,
+    image_id=image_id,
+    retrieve="images",
+    k=10,
+    distance_metric="Hamming",
+    add_correct_id=True
+)
+
+# %% 2 b) compute ranking captions
+ranking_captions = ranking1.rank_embedding(
+    caption_embed=caption_embedding,
+    caption_id=caption_id,
+    image_embed=image_embedding,
+    image_id=image_id,
+    retrieve="captions",
+    k=10,
+    distance_metric="Hamming",
+    add_correct_id=True
+)
+
+# %% 3 a) compute MAP@10 images
+average_precision_images = ranking1.average_precision(ranking_images, gtp=1)
+print(f"{average_precision_images.head()}")
+print(f"Mean average precision @10 is: {round(average_precision_images.mean()[0]*100, 4)} %")
+
+# %% 3 b) compute MAP@10 captions
+average_precision_captions = ranking1.average_precision(ranking_captions, gtp=5)
+print(f"{average_precision_captions.head()}")
+print(f"Mean average precision @10 is: {round(average_precision_captions.mean()[0]*100, 4)} %")
+
+
+
 # %%
+"""
+B) IMPLEMENTATION 2
+"""
+
+from include.part2 import ranking as ranking2
+
 image_names_c = list()
 image_names_i = list()
 for i in range(nr_images):
@@ -321,7 +383,7 @@ images_input = images_input.detach().numpy()
 
 captions = [image_names_c, captions_input]
 images = [image_names_i, images_input]
-f_score, g_score = ranking.mean_average_precision(captions, images, captions_per_image=captions_per_image)
+f_score, g_score = ranking2.mean_average_precision(captions, images, captions_per_image=captions_per_image)
 print('performance on training data: ')
 print('f_score = ' + str(f_score * 100) + "%")
 print('g_score = ' + str(g_score * 100) + "%")
