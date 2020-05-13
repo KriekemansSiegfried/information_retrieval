@@ -70,7 +70,7 @@ class EmbeddingMatrix(Matrix):
                     # not contain any values (I suppose not used by keras?)
                     new_weights.append(layer_weights)
         errors
-        # layer weights should be reversed so input layer is first, output layer is last
+        # layer weights should be reversed so input layer is first, model layer is last
         new_weights = new_weights[::-1]
         self.embedder.set_weights(new_weights)
         return new_weights

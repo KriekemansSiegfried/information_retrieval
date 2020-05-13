@@ -24,17 +24,17 @@ sns.set()
 # np.set_printoptions(threshold=sys.maxsize)
 
 
-# %%  import output
+# %%  import model
 
 # caption_filename = '/home/kriekemans/KUL/information_retrieval/dataset/results_20130124.token'
 # image_filename = '/home/kriekemans/KUL/information_retrieval/dataset/image_features.csv'
 
-caption_filename = 'include/output/results_20130124.token'
-image_filename = 'include/output/image_features.csv'
-weights_path = 'include/output/best_model_triplet.h5'
-model_json_path = 'include/output/best_model_triplet.json'
+caption_filename = 'include/model/results_20130124.token'
+image_filename = 'include/model/image_features.csv'
+weights_path = 'include/model/best_model_triplet.h5'
+model_json_path = 'include/model/best_model_triplet.json'
 
-# # read in output
+# # read in model
 captions = import_captions.import_captions(caption_filename)
 images = import_images.import_images(image_filename)
 

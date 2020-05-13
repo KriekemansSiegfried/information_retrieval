@@ -83,21 +83,21 @@ def calc_loss(B, F, G, Sim, gamma, eta):
 # 2) Read in data and preprocess
 # -------------------------------------------------------------------------------------------------------------
 
-# read in image output
+# read in image model
 images_train, images_val, images_test = preprocessing.read_split_images(path=PATH)
 
-# %% read in caption output and split in train, validation and test set and save it
+# %% read in caption model and split in train, validation and test set and save it
 # you don't need to run this if you have already ran this before ==> see next block of code
 # captions_train, captions_val, captions_test = preprocessing.read_split_captions(
-#     path=PATH, document='results_20130124.token', encoding="utf8", dir=(BASE + "output/data"))
+#     path=PATH, document='results_20130124.token', encoding="utf8", dir=(BASE + "model/data"))
 
 # %% in case you already have ran the cel above once before and don't want to run it over and over
 # train
-captions_train = json.load(open(BASE + 'output/data/train.json', 'r'))
+captions_train = json.load(open(BASE + 'model/data/train.json', 'r'))
 # val
-captions_val = json.load(open(BASE + 'output/data/val.json', 'r'))
+captions_val = json.load(open(BASE + 'model/data/val.json', 'r'))
 # test
-captions_test = json.load(open(BASE + 'output/data/test.json', 'r'))
+captions_test = json.load(open(BASE + 'model/data/test.json', 'r'))
 
 # %% clean captions (don't run this more than once or
 # you will prune your caption dictionary even further as it has the same variable name)
@@ -117,11 +117,11 @@ captions_test = preprocessing.clean_descriptions(
 # %% convert to bow vectors
 
 # c_vec = CountVectorizer(stop_words='english', min_df=1, max_df=100000)
-# fit on training output (descriptions)
+# fit on training model (descriptions)
 # c_vec.fit(captions_train.values())
 # print(f"Size vocabulary: {len(c_vec.vocabulary_)}")
 
-# # transform on train/val/test output
+# # transform on train/val/test model
 # captions_train_vec = [list(captions_train.keys()), c_vec.transform(captions_train.values())]
 # captions_val_vec = [list(captions_val.keys()), c_vec.transform(captions_val.values())]
 # captions_test_vec = [list(captions_test.keys()), c_vec.transform(captions_test.values())]

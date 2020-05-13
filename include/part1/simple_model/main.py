@@ -22,8 +22,8 @@ from include.part1.simple_model.preprocess_data import preprocessing as smd
 # %% GLOBAL PARAMETERS
 sns.set()
 PATH_DATA = "include/input/"
-# %% load output
-# output read home directory, this differs on some of our computers
+# %% load model
+# model read home directory, this differs on some of our computers
 
 # read in train train/validation/test indices
 # split according to https://github.com/BryanPlummer/flickr30k_entities
@@ -31,22 +31,22 @@ train_idx = pd.read_csv(PATH_DATA + 'train_idx.txt', dtype=object, header=None).
 val_idx = pd.read_csv(PATH_DATA + 'val_idx.txt', dtype=object, header=None).values.flatten()
 test_idx = pd.read_csv(PATH_DATA + 'test_idx.txt', dtype=object, header=None).values.flatten()
 
-# split image output in train/validation/test set
+# split image model in train/validation/test set
 # load first the whole image dataset in
 df_image = pd.read_csv(PATH_DATA + "image_features.csv", sep=" ", header=None)
 # remove .jpg from first row
 df_image.iloc[:, 0] = df_image.iloc[:, 0].str.split('.').str[0]
-# subset image output based idx
+# subset image model based idx
 df_image_train = df_image[df_image.iloc[:, 0].isin(train_idx.tolist())]
 df_image_val = df_image[df_image.iloc[:, 0].isin(val_idx.tolist())]
 df_image_test = df_image[df_image.iloc[:, 0].isin(test_idx.tolist())]
 
-print(f"shape training output image: {df_image_train.shape}")
-print(f"shape validation output image: {df_image_val.shape}")
-print(f"shape test output image: {df_image_test.shape}")
+print(f"shape training model image: {df_image_train.shape}")
+print(f"shape validation model image: {df_image_val.shape}")
+print(f"shape test model image: {df_image_test.shape}")
 
 # %%
-# read in caption output
+# read in caption model
 doc = smd.load_doc(PATH_DATA + '/results_20130124.token', encoding="utf8")
 # parse descriptions (using all descriptions)
 descriptions = smd.load_descriptions(doc, first_description_only=False)
@@ -60,7 +60,7 @@ vocabulary = set(all_tokens)
 print('Vocabulary Size: %d' % len(vocabulary))
 # save cleaned descriptions (
 # save_doc(descriptions, data_read_home+'/descriptions.txt')
-# descriptions = load_clean_descriptions('include/output/descriptions.txt')
+# descriptions = load_clean_descriptions('include/model/descriptions.txt')
 # print('Loaded %d' % (len(descriptions)))
 
 # %% split cleaned description in training/validation/test set
@@ -72,13 +72,13 @@ train_dic, val_dic, test_dic = smd.train_val_test_set_desc(descriptions,
 # https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html
 
 vectorizer = CountVectorizer(stop_words='english', min_df=1, max_df=100)
-# fit on training output (descriptions)
+# fit on training model (descriptions)
 vectorizer.fit(train_dic.values())
 print("saving vectorizer")
-joblib.dump(vectorizer, "include/output/models/simple_model/vectorizer_model.sav")
+joblib.dump(vectorizer, "include/model/models/simple_model/vectorizer_model.sav")
 
 print(len(vectorizer.vocabulary_))
-# transform descriptions (based on the fit from the training output)
+# transform descriptions (based on the fit from the training model)
 train_captions = vectorizer.transform(train_dic.values())
 val_captions = vectorizer.transform(val_dic.values())
 test_captions = vectorizer.transform(test_dic.values())
@@ -119,14 +119,14 @@ model = network.get_network(32, layers, 2048, input_dim=input_dim, output_activa
                             loss='mse', optimizer=custom_optimizer, metrics=['mse'])
 
 # save model architecutre
-filepath = 'include/output/figures/simple_model/architecture.png'
+filepath = 'include/model/figures/simple_model/architecture.png'
 plot_model(model, to_file=filepath,
            show_shapes=True, show_layer_names=True)
 
 reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.2,
                               patience=5, min_lr=0.00001)
 # save best model
-filepath = "include/output/models/simple_model/best_model.h5"
+filepath = "include/model/models/simple_model/best_model.h5"
 callbacks = [EarlyStopping(monitor='val_loss', patience=20),
              ModelCheckpoint(filepath=filepath, monitor='val_loss',
                              verbose=1, save_best_only=True, mode='min'), reduce_lr]
@@ -167,7 +167,7 @@ plt.ylim([0, 0.35])
 plt.legend()
 plt.show()
 # save image
-plt.savefig('include/output/figures/simple_model/training.png')
+plt.savefig('include/model/figures/simple_model/training.png')
 
 
 # %% make predictions

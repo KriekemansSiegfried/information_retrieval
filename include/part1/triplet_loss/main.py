@@ -23,7 +23,7 @@ from include.ranking import ranking as ranking
 
 # TODO:
 #  - make generator for sparse matrices: https://stackoverflow.com/questions/37609892/keras-sparse-matrix-issue
-#  - compute MAP@10 on train and test output: DONE https://towardsdatascience.com/breaking-down-mean-average-precision-map-ae462f623a52
+#  - compute MAP@10 on train and test model: DONE https://towardsdatascience.com/breaking-down-mean-average-precision-map-ae462f623a52
 #  - add documentation: DONE
 #  - try to regularize:
 #  - play wit hyperparameters:
@@ -36,12 +36,12 @@ SAVE_FIGURES = 'include/output/figures/triplet_loss/'
 MODEL_JSON_PATH = 'include/output/model/triplet_loss/best_model.json'
 MODEL_WEIGHTS_PATH = 'include/output/model/triplet_loss/best_model.h5'
 sns.set()
-# %% read in image output
+# %% read in image model
 image_train, image_val, image_test = preprocessing.read_split_images(path=PATH)
 #
-# # %% read in caption output and split in train, validation and test set and save it
-# caption_train, caption_val, caption_test = preprocessing.read_split_captions(
-#     path=PATH, document='results_20130124.token', encoding="utf8", dir="include/output/data")
+#%% read in caption model and split in train, validation and test set and save it
+caption_train, caption_val, caption_test = preprocessing.read_split_captions(
+     path=PATH, document='results_20130124.token', encoding="utf8", dir="include/output/data")
 
 # %% in case you already have ran the cel above once before and don't want to run it over and over
 # train
@@ -56,23 +56,23 @@ caption_test = json.load(open('include/output/data/test.json', 'r'))
 
 # experiment with it: my experience: seems to work better when training
 stemming = True
-# caption_train = preprocessing.clean_descriptions(
-#     descriptions=caption_train, min_word_length=2, stem=stemming, unique_only=False
-# )
-# caption_val = preprocessing.clean_descriptions(
-#     descriptions=caption_val, min_word_length=2, stem=stemming, unique_only=False
-# )
-# caption_test = preprocessing.clean_descriptions(
-#     descriptions=caption_test, min_word_length=2, stem=stemming, unique_only=False
-# )
+caption_train = preprocessing.clean_descriptions(
+    descriptions=caption_train, min_word_length=2, stem=stemming, unique_only=False
+)
+caption_val = preprocessing.clean_descriptions(
+    descriptions=caption_val, min_word_length=2, stem=stemming, unique_only=False
+)
+caption_test = preprocessing.clean_descriptions(
+    descriptions=caption_test, min_word_length=2, stem=stemming, unique_only=False
+)
 
 # %% convert to bow
 c_vec = CountVectorizer(stop_words='english', min_df=1, max_df=100000)
-# fit on training output (descriptions)
+# fit on training model (descriptions)
 
 c_vec.fit(caption_train.values())
 print(f"Size vocabulary: {len(c_vec.vocabulary_)}")
-# transform on train/val/test output
+# transform on train/val/test model
 caption_train_bow = [list(caption_train.keys()), c_vec.transform(caption_train.values())]
 caption_val_bow = [list(caption_val.keys()), c_vec.transform(caption_val.values())]
 caption_test_bow = [list(caption_test.keys()), c_vec.transform(caption_test.values())]
@@ -85,7 +85,7 @@ caption_id_train, dataset_train, labels_train = preprocessing.convert_to_triplet
 )
 
 # %% validation
-n_images_val = 500
+n_images_val = 1000
 caption_id_val, dataset_val, labels_val = preprocessing.convert_to_triplet_dataset(
     captions=caption_val_bow, images=image_val, captions_k=5, p=25, n_row=n_images_val, todense=True
 )
@@ -109,7 +109,7 @@ model = network.get_network_triplet_loss(
     embedding_size=512, triplet_margin=100, optimizer=custom_optimizer
 )
 # %%
-print('network loaded')
+# save network and plot
 model_json = model.to_json()
 with open(MODEL_JSON_PATH, 'w') as json_file:
     json_file.write(model_json)
@@ -122,7 +122,7 @@ reduce_lr = ReduceLROnPlateau(
     monitor='loss', factor=0.2, patience=5, min_lr=0.00001
 )
 
-callbacks = [EarlyStopping(monitor='val_loss', patience=10),
+callbacks = [EarlyStopping(monitor='val_loss', patience=2),
              ModelCheckpoint(filepath=MODEL_WEIGHTS_PATH, monitor='val_loss',
                              verbose=1, save_best_only=True, mode='min'), reduce_lr]
 
@@ -202,9 +202,9 @@ ranking_captions = ranking.rank_embedding(
 # %% 3 a) compute MAP@10 images
 average_precision_images = ranking.average_precision(ranking_images, gtp=1)
 print(f"{average_precision_images.head()}")
-print(f"Mean average precision @10 is: {round(average_precision_images.mean()[0], 5)}")
+print(f"Mean average precision @10 is: {round(average_precision_images.mean()[0]*100, 4)} %")
 
 # %% 3 b) compute MAP@10 captions
 average_precision_captions = ranking.average_precision(ranking_captions, gtp=5)
 print(f"{average_precision_captions.head()}")
-print(f"Mean average precision @10 is: {round(average_precision_captions.mean()[0], 5)}")
+print(f"Mean average precision @10 is: {round(average_precision_captions.mean()[0]*100, 4)} %")

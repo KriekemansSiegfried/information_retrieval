@@ -35,7 +35,7 @@ def load_descriptions(doc, first_description_only=True, n_desc=None):
     for line in doc.split('\n'):
         i += 1
 
-        # load only part of the output
+        # load only part of the model
         if n_desc is not None and i == n_desc:
             break
         # split line by white space

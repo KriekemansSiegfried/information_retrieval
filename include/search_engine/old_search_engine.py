@@ -25,16 +25,16 @@ from include.networks.network import import_network
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
-image_file_directory = '../output/flickr30k-images/'
-image_csv_directory = '../output/image_features.csv'
-path_to_vectorizer = '../output/vectorizer_model.sav'
+image_file_directory = '../model/flickr30k-images/'
+image_csv_directory = '../model/image_features.csv'
+path_to_vectorizer = '../model/vectorizer_model.sav'
 # path_to_simple_model = '../simple_model/simple_model.hdf5'
-path_to_simple_model = '../output/simple_model.h5'
+path_to_simple_model = '../model/simple_model.h5'
 
 model = import_network(path_to_simple_model)
 image_array = None
 vectorizer = None
-data_read_home = '../output/'
+data_read_home = '../model/'
 #caption_string = 'Two young guys with shaggy hair look at their hands while hanging out in the yard'
 caption_string = 'young guys with shaggy hair look their hands while hanging yard white males outside near many ' \
                  'bushes green shirts standing blue shirt garden friends enjoy time spent together'
@@ -58,7 +58,7 @@ def build_vectorizer():
     train_dic, val_dic, test_dic = split_data.train_val_test_set_desc(descriptions,
                                                                       train_idx, val_idx, test_idx)
     vectorizer = CountVectorizer(stop_words='english', min_df=1, max_df=100)
-    # fit on training output (descriptions)
+    # fit on training model (descriptions)
     vectorizer.fit(train_dic.values())
 """
 

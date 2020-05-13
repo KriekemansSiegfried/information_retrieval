@@ -28,7 +28,7 @@ def get_split_idx(path=None):
 
 def read_split_images(path=None, verbose=True):
     """
-    reads in the image output and input into a train, validation and test set
+    reads in the image model and input into a train, validation and test set
     according to https://github.com/BryanPlummer/flickr30k_entities
 
     :param path: String
@@ -49,7 +49,7 @@ def read_split_images(path=None, verbose=True):
     # remove .jpg from first row
     df.iloc[:, 0] = df.iloc[:, 0].str.split('.').str[0]
 
-    # split image output in train/validation/test set
+    # split image model in train/validation/test set
     df_train = df[df.iloc[:, 0].isin(train_idx.tolist())]
     df_val = df[df.iloc[:, 0].isin(val_idx.tolist())]
     df_test = df[df.iloc[:, 0].isin(test_idx.tolist())]
@@ -267,7 +267,7 @@ def convert_to_triplet_dataset(captions=None, images=None, captions_k=5, p=100,
     caption_ids_pos = captions[0][0:n_captions]
     # get the captions features
     caption_features_set_pos = captions[1][0:n_captions, :]
-    # our image output set has 5 times less examples than our caption output, so we need to repeat
+    # our image model set has 5 times less examples than our caption model, so we need to repeat
     image_features_set = np.repeat(images.values[0:n_images, 1:], repeats=captions_k, axis=0).astype(dtype=float)
     # indices for the negative examples
     negatives_idx = []

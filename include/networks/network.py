@@ -13,7 +13,7 @@ from tensorflow_core.python.ops.linalg_ops import norm
 def custom_loss():
     def row_distance(y_pred):
         """ function to map a tensor to l2 distances
-        This function assumes that both label and y are related to 1 row of output
+        This function assumes that both label and y are related to 1 row of model
 
         """
         print('y_pred -> {}'.format(y_pred.shape))
@@ -42,9 +42,9 @@ def get_network(input_size, layers, output_size, input_dim=None, output_activati
 
     :param input_size:  bit_size of the input layer?
     :param layers: an array of integer values, entries being bit_size for every intermediate layer
-    :param output_size: size of the output layer
+    :param output_size: size of the model layer
     :param input_dim: dimension of the input
-    :param output_activation: output activation function, default set to 'relu'
+    :param output_activation: model activation function, default set to 'relu'
     :param loss: the loss-function
     :param optimizer:
     :param metrics:
@@ -79,7 +79,7 @@ def euclidean_distance(vects):
 
 def get_network_siamese(caption_feature_size, image_feature_size, embedding_size):
     print('input dims = [{}, {}]'.format(caption_feature_size, image_feature_size))
-    print('output = {}'.format(embedding_size))
+    print('model = {}'.format(embedding_size))
 
     caption_input = Input(shape=(caption_feature_size,))
     caption_hidden = Dense(4096, activation='relu')(caption_input)
