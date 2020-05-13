@@ -1,4 +1,5 @@
 import json
+from random import random, uniform, randrange, sample, randint
 
 import torch
 import numpy as np
@@ -51,8 +52,8 @@ class FLICKR30K(Dataset):
         self.images = np.repeat(self.images, repeats=self.captions_per_image,
                                 axis=0)
 
-        self.caption_indices = np.random.permutation(len(self.images))
         self.image_indices = np.random.permutation(len(self.images))
+        self.caption_indices = self.create_caption_indices(self.image_indices)
 
         self.captions = self.captions[self.caption_indices]
         self.caption_labels = self.captions[self.caption_indices]
@@ -67,10 +68,20 @@ class FLICKR30K(Dataset):
                 self.captions[index]).float()
         else:
             ## return in order: always linked to eachother
-            return pt.tensor(self.images[self.image_indices[index]]).float(), pt.tensor(self.captions[self.caption_indices[index]]).float()
+            return pt.tensor(self.images[self.image_indices[index]]).float(), pt.tensor(
+                self.captions[self.caption_indices[index]]).float()
 
     def __len__(self):
         return len(self.captions)
 
     def get_dimensions(self):
         return self.images.shape[1], self.captions.shape[1]
+
+    def create_caption_indices(self, image_indices):
+        permutation = np.random.permutation(len(self.images))
+        offsets = [randint(0,4) for _ in range(len(self.images))]
+        for index in range(len(self.images)):
+            if uniform(0, 1) <= .5:
+                base_index = self.image_indices[index] - self.image_indices[index] % 5
+                permutation[index] = base_index + offsets[index]
+        return permutation

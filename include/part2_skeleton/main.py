@@ -56,9 +56,10 @@ def main():
     global args
     args = parser.parse_args()
 
-    args.epochs = 5
+    args.epochs = 100
 
     args.cuda = not args.no_cuda and torch.cuda.is_available()
+    args.cuda = False
     torch.manual_seed(args.seed)
     if args.cuda:
         torch.cuda.set_device(args.gpu)
@@ -186,14 +187,14 @@ def test(test_loader, model):
 
     test_desc = []
     test_img = []
-
-    for batch_idx, (x, y) in enumerate(test_loader):
-        desc_embeddings, img_embeddings = model(x, y)
-        test_desc.append(desc_embeddings)
-        test_img.append(img_embeddings)
-
-    test_desc = np.stack(test_desc, axis=0)
-    test_img = np.stack(test_img, axis=0)
+    #
+    # for batch_idx, (x, y) in enumerate(test_loader):
+    #     desc_embeddings, img_embeddings, _ = model(x, y)
+    #     test_desc.append(desc_embeddings.detach().numpy())
+    #     test_img.append(img_embeddings.detach().numpy())
+    #
+    # test_desc = np.stack(test_desc, axis=0)
+    # test_img = np.stack(test_img, axis=0)
 
     map = mapk(test_desc, test_img)
 
