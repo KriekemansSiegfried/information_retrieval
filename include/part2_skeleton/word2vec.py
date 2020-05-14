@@ -8,15 +8,12 @@ nltk.download('punkt')
 
 def train_w2v(captions):
     data = []
-    for caption in captions:
+    for caption in captions.values():
         caption_array = [word for word in word_tokenize(caption)]
         data.append(caption_array)
     model = gensim.models.Word2Vec(data, min_count=1,
                                    size=300, window=5)
-
-    embeddings = use_w2v(captions, model)
-
-    return embeddings, model
+    return model
 
 
 def use_w2v(captions, model):
