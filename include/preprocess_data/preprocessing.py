@@ -174,7 +174,8 @@ def clean_descriptions(descriptions, min_word_length=3, stem=True, unique_only=F
     """
     # stemmer
     if stem:
-        print("Stemming based on the Lancaster (Paice/Husk) stemming algorithm")
+        if verbose:
+            print("Stemming based on the Lancaster (Paice/Husk) stemming algorithm")
         st = LancasterStemmer()
     # prepare regex for char filtering
     re_punc = re.compile('[%s]' % re.escape(string.punctuation))
