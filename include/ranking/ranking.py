@@ -85,6 +85,7 @@ def rank_embedding(caption_embed=None,
 
 
 def average_precision(dic=None, gtp=1):
+    quotient = sum(1 / (i + 1) for i in range(gtp))
     """
     Computes the average precision for each caption_id/ image_id
 
@@ -95,7 +96,7 @@ def average_precision(dic=None, gtp=1):
 
     # store average precision
     store_ap = {}
-    print(f"The number of ground true positives is {gtp} when computing the average precision")
+    print(f"\nThe number of ground true positives is {gtp} when computing the average precision")
 
     quotient = 0
     for x in range(gtp):
