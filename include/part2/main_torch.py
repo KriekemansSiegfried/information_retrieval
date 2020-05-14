@@ -35,7 +35,8 @@ from include.part2.embedding import matrix
 #  %% 1) GLOBAL VARIABLES (indicated in CAPITAL letters)
 # -------------------------------------------------------------------------------------------------------------
 
-BASE = "include/"  # check your own path
+#BASE = "include/"  # check your own path
+BASE = '../'
 PATH = BASE + "input/"
 
 # Parameters (given in the assignment)

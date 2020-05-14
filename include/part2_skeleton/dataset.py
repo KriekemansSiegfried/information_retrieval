@@ -1,10 +1,8 @@
 import json
-from copy import copy
 from random import random, uniform, randrange, sample, randint
 
 import torch
 import numpy as np
-from scipy import linalg
 from sklearn.feature_extraction.text import CountVectorizer
 from torch.utils.data import Dataset
 import torch as pt
@@ -18,21 +16,13 @@ PATH = "input/"
 class FLICKR30K(Dataset):
     w2v_model = None
     count_model = None
-    caption_dict = {}
-    dims = 1024
 
     def __init__(self, mode="train", limit=-1, word_transformer="w2v"):
         super().__init__()
         assert mode in ['train', 'val', 'test']
         self.mode = mode
         internal_set_images = read_split_images(path=PATH, mode=self.mode, limit=limit)
-        internal_set_captions = []
-        if self.mode == 'train':
-            FLICKR30K.caption_dict['train'] = json.load(open('output/data/{}.json'.format('train'), 'r'))
-            FLICKR30K.caption_dict['test'] = json.load(open('output/data/{}.json'.format('test'), 'r'))
-            FLICKR30K.caption_dict['val'] = json.load(open('output/data/{}.json'.format('val'), 'r'))
-
-        internal_set_captions = FLICKR30K.caption_dict[self.mode]
+        internal_set_captions = json.load(open('output/data/{}.json'.format(self.mode), 'r'))
 
         self.image_labels = internal_set_images.iloc[:, 0]
         internal_set_images = internal_set_images.drop(0, 1)
@@ -40,11 +30,9 @@ class FLICKR30K(Dataset):
         self.caption_labels = list(internal_set_captions.keys())
 
         if word_transformer == "w2v":
-                if mode == 'train':
-                    caption_w2v = copy(FLICKR30K.caption_dict['train'])
-                    caption_w2v.update(FLICKR30K.caption_dict['test'])
-                    caption_w2v.update(FLICKR30K.caption_dict['val'])
-                    FLICKR30K.w2v_model = train_w2v(caption_w2v)
+            if mode == 'train':
+                self.captions, FLICKR30K.w2v_model = train_w2v(internal_set_captions.values())
+            else:
                 self.captions = use_w2v(internal_set_captions.values(), FLICKR30K.w2v_model)
         elif word_transformer == "bow":
             if mode == 'train':
@@ -68,8 +56,10 @@ class FLICKR30K(Dataset):
         self.caption_indices = self.create_caption_indices(self.image_indices)
 
         self.captions = self.captions[self.caption_indices]
+        self.caption_labels = self.captions[self.caption_indices]
 
         self.images = self.images[self.image_indices]
+        self.image_labels = self.images[self.image_indices]
 
     def __getitem__(self, index):
         if self.mode == 'train':
@@ -89,9 +79,9 @@ class FLICKR30K(Dataset):
 
     def create_caption_indices(self, image_indices):
         permutation = np.random.permutation(len(self.images))
-        offsets = [randint(0, 4) for _ in range(len(self.images))]
+        offsets = [randint(0,4) for _ in range(len(self.images))]
         for index in range(len(self.images)):
-            if uniform(0, 1) <= 0.5:
+            if uniform(0, 1) <= .5:
                 base_index = self.image_indices[index] - self.image_indices[index] % 5
                 permutation[index] = base_index + offsets[index]
         return permutation
