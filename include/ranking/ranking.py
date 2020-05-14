@@ -96,6 +96,11 @@ def average_precision(dic=None, gtp=1):
     # store average precision
     store_ap = {}
     print(f"The number of ground true positives is {gtp} when computing the average precision")
+
+    quotient = 0
+    for x in range(gtp):
+        quotient += + 1 / (x + 1)
+
     for key, value in dic.items():
 
         # get the id's of the ranked images/captions
@@ -115,11 +120,7 @@ def average_precision(dic=None, gtp=1):
                 else:
                     ap.append(0)
 
-            n = 0
-            for x in range(gtp):
-                n = n + 1/(x+1)
-
-            store_ap[key] = 1 / n * sum(ap)
+            store_ap[key] = 1 / quotient * sum(ap)
         else:
             store_ap[key] = 0
 
