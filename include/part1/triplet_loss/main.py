@@ -147,10 +147,11 @@ model.fit(
 print('network fit done!')
 
 # %% visualize training
+num_e_done = len(model.history.history['loss'])
 
 plt.figure(figsize=(10, 8))
-plt.plot(np.arange(1, real_epochs + 1, 1), model.history.history['loss'], 'g-', label='training')
-plt.plot(np.arange(1, real_epochs + 1, 1), model.history.history['val_loss'], 'r-', label='validation')
+plt.plot(np.arange(1, num_e_done + 1, 1), model.history.history['loss'], 'g-', label='training')
+plt.plot(np.arange(1, num_e_done + 1, 1), model.history.history['val_loss'], 'r-', label='validation')
 plt.xlabel("Epochs")
 plt.ylabel("Triplet loss")
 plt.ylim([0, 100])

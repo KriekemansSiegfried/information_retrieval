@@ -10,11 +10,14 @@ import numpy as np
 from torch.autograd import Variable
 from torch.utils.data import DataLoader
 
-from part2_skeleton.dataset import FLICKR30K
+"""from part2_skeleton.dataset import FLICKR30K
 from part2_skeleton.eval import mapk
 from part2_skeleton.losses import cross_modal_hashing_loss
-from part2_skeleton.models import BasicModel
-
+from part2_skeleton.models import BasicModel"""
+from include.part2_skeleton.dataset import FLICKR30K
+from include.part2_skeleton.eval import mapk
+from include.part2_skeleton.losses import cross_modal_hashing_loss
+from include.part2_skeleton.models import BasicModel
 parser = argparse.ArgumentParser(description='Cross-modal Retrieval with Hashing')
 parser.add_argument('--name', default='BasicModel', type=str,
                     help='name of experiment')
@@ -149,6 +152,10 @@ def train(train_loader, model, S, optimizer, epoch):
 
         # pass data samples to model
         F, G, B = model(x, y)
+
+
+        indices_x = indices_x.type(torch.long)
+        indices_y = indices_y.type(torch.long)
 
         # sim = get_similarity_matrix(indices_x, indices_y)
         sim = S[indices_x, indices_y]

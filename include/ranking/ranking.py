@@ -115,8 +115,13 @@ def average_precision(dic=None, gtp=1):
                 else:
                     ap.append(0)
 
-            store_ap[key] = 1 / gtp * sum(ap)
+            if gtp > 1:
+                n = 0
+                for x in range(gtp):
+                    n = n + 1/(x+1)
+                gtp = n
 
+            store_ap[key] = 1 / gtp * sum(ap)
         else:
             store_ap[key] = 0
 
