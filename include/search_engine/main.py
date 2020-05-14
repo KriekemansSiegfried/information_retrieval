@@ -1,141 +1,257 @@
-# %% import libraries
+# -------------------------------------------------------------------------------
+# 0) IMPORT LIBRARIES
+# -------------------------------------------------------------------------------
 
+# data transformations
 import numpy as np
+from sklearn.externals import joblib
+import pandas as pd
+from numpy.linalg import norm
+from scipy.sparse import isspmatrix
+import json
+import os
+
+# visualization
 import seaborn as sns
-from include.bow import dictionary, one_hot
-from include.io import import_captions, import_images
-# to quickly reload functions
-from include.part1.data_analysis import convert_to_triplet_dataset
-from nltk.corpus import stopwords
-# custom defined functions
-from tensorflow_core.python.keras.utils.vis_utils import plot_model
 
-# style seaborn for plotting
-# %matplotlib qt5 (for interactive plotting: run in the python console)
-from include.networks.network import get_network_triplet_loss
-# from include.training.dataset import convert_to_triplet_dataset
-from include.util.util import get_pairs_images, make_dict
+# own functions
+from include.part1.triplet_loss.load_model import load_model
+from include.preprocess_data import preprocessing
 
-# interactive plotting
-# %matplotlib qt5
-
+# %% GLOBAL VARIABLES (indicated in CAPITAL letters)
 sns.set()
-# print numpy arrays in full
-# np.set_printoptions(threshold=sys.maxsize)
+SAVE_BOW_MODEL = 'include/output/model/triplet_loss/caption_bow_model.pkl'
+MODEL_JSON_PATH = 'include/output/model/triplet_loss/best_model.json'
+MODEL_WEIGHTS_PATH = 'include/output/model/triplet_loss/best_model.h5'
+
+# -------------------------------------------------------------------------------
+# 1) LOAD MODELS
+# -------------------------------------------------------------------------------
+
+"""
+1.A: Load models for triplet loss (PART 1)
+"""
+
+# %% Import best trained caption and image model
+print("TRIPLET LOSS: Loading models")
+caption_model_triplet, image_model_triplet = load_model.load_submodels(
+    model_path=MODEL_JSON_PATH, weights_path=MODEL_WEIGHTS_PATH
+)
+
+# import bow model
+bow_triplet_loss = joblib.load(SAVE_BOW_MODEL)
+
+"""
+1.B: Load models (PART2) TODO add models PART 2
+"""
+
+# -------------------------------------------------------------------------------
+# 2) Specify Caption/ Caption_ID or give image ID
+# -------------------------------------------------------------------------------
+# %%
+
+# -------------------------------------------------------------------------------
+# HELPER FUNCTIONS (NOT FINISHED)
+# -------------------------------------------------------------------------------
+
+def embed_new_caption(new_caption=None,
+                      new_caption_id=None,
+                      clean=True,
+                      transformer=bow_triplet_loss,
+                      caption_embedder=caption_model_triplet,
+                      min_word_length=2,
+                      stem=True,
+                      unique_only=False):
+
+    # TODO: add functionality to load caption id as a new caption
+    if new_caption is None and new_caption_id is not None:
+        all_captions = load_caption_database()
+        new_caption = {new_caption_id: all_captions[new_caption_id]}
+
+    # preprocess caption: clean and transform to either w2v or bow
+    new_caption = preprocess_caption(
+        new_caption,
+        transformer=transformer,
+        stem=stem,
+        unique_only=unique_only,
+        min_word_length=min_word_length)
+
+    return caption_embedder(new_caption)
 
 
-# %%  import model
+def preprocess_caption(caption=None,
+                       clean=True,
+                       transformer=None,
+                       min_word_length=2,
+                       stem=True,
+                       unique_only=False):
+    if clean:
+        caption = preprocessing.clean_descriptions(
+            descriptions=caption,
+            min_word_length=min_word_length,
+            stem=stem,
+            unique_only=unique_only,
+            verbose=False
+        )
 
-# caption_filename = '/home/kriekemans/KUL/information_retrieval/dataset/results_20130124.token'
-# image_filename = '/home/kriekemans/KUL/information_retrieval/dataset/image_features.csv'
+    # convert caption to either bow or word2vec
+    trans = transformer.transform(caption)
+    if isspmatrix(trans):
+        trans = trans.todense()
+    return trans
 
-caption_filename = 'include/model/results_20130124.token'
-image_filename = 'include/model/image_features.csv'
-weights_path = 'include/model/best_model_triplet.h5'
-model_json_path = 'include/model/best_model_triplet.json'
 
-# # read in model
-captions = import_captions.import_captions(caption_filename)
-images = import_images.import_images(image_filename)
+#%%
 
-print('loaded {} captions'.format(len(captions)))
-print('loaded {} images'.format(len(images)))
+def embed_new_image(new_image=None, image_embedder=None):
 
-# %% create captions to bow dictionary
-bow_dict = dictionary.create_dict(captions)
+    # TODO: add functionality to load image id as a new image
+    # embedding
+    return image_embedder.predict(new_image)
+
+# %%
+def load_image_database(path='include/input/image_features.csv'):
+    """
+
+    :param path:
+    :return:
+    """
+    database_images = pd.read_csv(path, sep=" ", header=None)
+    image_ids = database_images.iloc[:, 0].values
+    images = database_images.iloc[:, 1:].values
+    return {
+        "ID": image_ids,
+        "X": images
+            }
+
+# %%
+
+def load_caption_database(load_from_json=False,
+                          path_raw_data="include/input/results_20130124.token",
+                          encoding="utf8",
+                          dir_to_read_save="include/output/data/"):
+
+    # check if we can read from json format
+    if load_from_json and dir_to_read_save is not None:
+        database_captions = json.load(open(dir_to_read_save, 'r'))
+
+    else:
+        # open the file as read only
+        file = open(path_raw_data, 'r', encoding=encoding)
+        # read all text
+        text = file.read()
+        # close the file
+        file.close()
+
+        database_captions = dict()
+
+        # process lines
+        for line in text.split('\n'):
+            # split line by white space
+            tokens = line.split()
+            # ignore lines shorter than two
+            if len(line) < 2:
+                continue
+            # take the first token as the image id, the rest as the description
+            caption_id, caption_desc = tokens[0], tokens[1:]
+            # convert description tokens back to string
+            caption_desc = ' '.join(caption_desc)
+            database_captions[caption_id] = caption_desc
+        if dir_to_read_save is not None:
+            json.dump(database_captions, open(os.path.join(dir_to_read_save, "all_data.json"), 'w'))
+
+    return database_captions
+
+
+def get_batch(iterable, n=1):
+    l = len(iterable)
+    for ndx in range(0, l, n):
+        yield iterable[ndx:min(ndx + n, l)]
+
+
+def rank(distance_metric="L2",
+         new_embedding=None,
+         database_X=None,
+         database_id=None,
+         database_model=None,
+         batch_size=512,
+         k=10):
+
+    #assert distance_metric in ["L2", "Hamming"]
+    store_dist = []
+    # loop over in batches (predicting the whole database it to large)
+    for batch in get_batch(list(range(0, len(database_X))), batch_size):
+        database_embedding = database_model(database_X[batch, :])
+        if distance_metric == "L2":
+            dist = norm(database_embedding - new_embedding, ord=2, axis=1)
+        else:
+            pass  # TODO: add hamming distance
+
+        # store distance
+        store_dist += dist.flatten().tolist()
+
+    # convert to numpy array
+    store_dist = np.array(store_dist)
+    # find lowest indices
+    lowest_idx = np.argpartition(store_dist, kth=range(len(store_dist)))[0:k]
+    # get lowest distance
+    lowest_dist = store_dist[lowest_idx].flatten().tolist()
+    # get lowest ids
+    lowest_ids = database_id[lowest_idx].flatten().tolist()
+    # return in dictionary format
+    return dict(zip(lowest_ids, lowest_dist))
+# %%
+
 
 
 # %%
-# get stop words
-stop_words = set(stopwords.words('english'))
+def plot_images(dic):
+    pass
 
-# prune dictionary
-bow_dict_pruned, removed_words = dictionary.prune_dict(word_dict=bow_dict,
-                                                       stopwords=stop_words,
-                                                       min_word_len=3,
-                                                       min_freq=0,
-                                                       max_freq=1000)
+def print_captions(dic):
+    pass
 
-# have a look again at the most frequent words from the updated dictionary
-# _ = fw.rank_word_freq(dic=bow_dict_pruned, n=20, ascending=False, visualize=True)
 
-# have a look at the removed words
-# _ = fw.rank_word_freq(dic=removed_words, n=20, ascending=False, visualize=True)
-
-# %% # one hot encode
-tokens = list(bow_dict_pruned.keys())
-
-print('converting caption features')
-
-caption_feature_size = len(tokens)
-
-progress = 0
-pruned_captions = []
-for caption in captions:
-    progress += 1
-    if progress % 2500 == 0:
-        print(progress)
-    # efficiently store sparse matrix
-    # see https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csr_matrix.html
-    caption.features = one_hot.convert_to_bow(caption, tokens)
-    pruned_captions.append(caption)
-    if progress == 2500:
-        break
-# %%
-
-captions = pruned_captions
-
-print('features converted')
-#
-print('creating triplet dict')
-pair_dict = make_dict(images, captions)
-print('creating triplets')
-pairs = get_pairs_images(pair_dict)
+# %% Test
 
 # %%
-print('pairs created')
-print('creating dataset with labels')
-dataset, labels = convert_to_triplet_dataset(pairs)
-print('dataset created')
+caption_test = embed_new_caption(
+    new_caption_id='1067675215.jpg#4',
+    caption_embedder=caption_model_triplet,
+    transformer=bow_triplet_loss
+)
 
 # %%
-print('network loading')
-from tensorflow.keras import optimizers
-
-custom_optimizer = optimizers.Adam(lr=1e-4, beta_1=0.90, beta_2=0.999, epsilon=None, decay=1e-6, amsgrad=False)
-network = get_network_triplet_loss(caption_feature_size, len(images[0].features), 512)
-print('network loaded')
-model_json = network.to_json()
-with open(model_json_path, 'w') as json_file:
-    json_file.write(model_json)
-
-plot_model(network, to_file='model.png', show_shapes=True, show_layer_names=True)
+database_images = load_image_database()
 
 # %%
-from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
-from tensorflow.keras.callbacks import ReduceLROnPlateau
 
-reduce_lr = ReduceLROnPlateau(monitor='loss', factor=0.2,
-                              patience=5, min_lr=0.00001)
+# rank images
+ranking_out = rank(
+     new_embedding=caption_test,
+     database_X=database_images['X'],
+     database_id=database_images['ID'],
+     database_model=image_model_triplet,
+     batch_size=512,
+     k=10)
 
-callbacks = [EarlyStopping(monitor='loss', patience=10),
-             ModelCheckpoint(filepath=weights_path, monitor='loss',
-                             verbose=1, save_best_only=True, mode='min'), reduce_lr]
-
-real_epochs = 15
-batch_size = 128
-network.fit(dataset, labels, epochs=real_epochs, batch_size=batch_size, callbacks=callbacks)
-
-print('network fit done!')
-
-# %% plot training and validation loss
-import matplotlib.pyplot as plt
-
-plt.figure(figsize=(10, 8))
-plt.plot(np.arange(1, 30 + 1, 1), network.history.history['loss'], 'g-', label='training')
-# plt.plot(np.arange(1, real_epochs + 1, 1), history.history['val_mse'], 'r-', label='validation')
-plt.xlabel("Epochs")
-plt.ylabel("Triplet loss")
-plt.ylim([0, 10])
-plt.legend()
-plt.show()
+# %% TODO rank captions
+databse_captions = load_caption_database()
+ID_captions = databse_captions.keys()
+#%%
+databse_captions = preprocess_caption(
+    caption=databse_captions,
+    clean=True,
+    transformer=bow_triplet_loss,
+    min_word_length=2,
+    stem=True,
+    unique_only=False
+)
+# %%
+ranking_out = rank(
+     new_embedding=caption_test,
+     database_X=databse_captions,
+     database_id=np.array(ID_captions),
+     database_model=image_model_triplet,
+     batch_size=512,
+     k=10)

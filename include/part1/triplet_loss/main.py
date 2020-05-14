@@ -3,6 +3,7 @@
 import json
 import numpy as np
 from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.externals import joblib
 
 # visualize
 import matplotlib.pyplot as plt
@@ -33,6 +34,7 @@ from include.ranking import ranking as ranking
 # %% GLOBAL VARIABLES (indicated in CAPITAL letters)
 PATH = "include/input/"
 SAVE_FIGURES = 'include/output/figures/triplet_loss/'
+SAVE_BOW_MODEL = 'include/output/model/triplet_loss/caption_bow_model.pkl'
 MODEL_JSON_PATH = 'include/output/model/triplet_loss/best_model.json'
 MODEL_WEIGHTS_PATH = 'include/output/model/triplet_loss/best_model.h5'
 sns.set()
@@ -77,21 +79,25 @@ caption_train_bow = [list(caption_train.keys()), c_vec.transform(caption_train.v
 caption_val_bow = [list(caption_val.keys()), c_vec.transform(caption_val.values())]
 caption_test_bow = [list(caption_test.keys()), c_vec.transform(caption_test.values())]
 
+# save vectorizer for later (search engine)
+joblib.dump(c_vec, SAVE_BOW_MODEL)
+# load your model (just as a test)
+# c_vec = joblib.load(SAVE_BOW_MODEL)
 # %% train
-n_images_train = 5000
+n_images_train = 2000  # whole dataset:  n_images_train = 29783
 caption_id_train, dataset_train, labels_train = preprocessing.convert_to_triplet_dataset(
     captions=caption_train_bow, images=image_train, captions_k=5,
     p=100, n_row=n_images_train, todense=True
 )
 
 # %% validation
-n_images_val = 1000
+n_images_val = 1000  # whole dataset
 caption_id_val, dataset_val, labels_val = preprocessing.convert_to_triplet_dataset(
     captions=caption_val_bow, images=image_val, captions_k=5, p=25, n_row=n_images_val, todense=True
 )
 
 # %% test
-n_images_test = 1000
+n_images_test = 1000  # whole dataset
 caption_id_test, dataset_test, labels_test = preprocessing.convert_to_triplet_dataset(
     captions=caption_test_bow, images=image_test, captions_k=5, p=25, n_row=n_images_test, todense=True
 )
@@ -106,7 +112,7 @@ custom_optimizer = optimizers.Adam(
 )
 model = network.get_network_triplet_loss(
     caption_size=caption_feature_size, image_size=image_feature_size,
-    embedding_size=512, triplet_margin=100, optimizer=custom_optimizer
+    embedding_size=512, triplet_margin=300, optimizer=custom_optimizer
 )
 # %%
 # save network and plot
@@ -119,15 +125,15 @@ plot_model(model, to_file=SAVE_FIGURES+'architecture.png',
 
 # %%
 reduce_lr = ReduceLROnPlateau(
-    monitor='loss', factor=0.2, patience=5, min_lr=0.00001
+    monitor='loss', factor=0.3, patience=1, min_lr=0.00001
 )
 
-callbacks = [EarlyStopping(monitor='val_loss', patience=2),
+callbacks = [EarlyStopping(monitor='val_loss', patience=5),
              ModelCheckpoint(filepath=MODEL_WEIGHTS_PATH, monitor='val_loss',
                              verbose=1, save_best_only=True, mode='min'), reduce_lr]
 
 # %%
-real_epochs = 15
+real_epochs = 25
 batch_size = 256
 model.fit(
     x=dataset_train,
@@ -147,9 +153,11 @@ plt.plot(np.arange(1, real_epochs + 1, 1), model.history.history['loss'], 'g-', 
 plt.plot(np.arange(1, real_epochs + 1, 1), model.history.history['val_loss'], 'r-', label='validation')
 plt.xlabel("Epochs")
 plt.ylabel("Triplet loss")
-plt.ylim([0, 120])
+plt.ylim([0, 100])
 plt.legend()
 plt.show()
+# save figure
+plt.savefig(SAVE_FIGURES + "training.png")
 
 # %% Import best trained caption and image model
 caption_model, image_model = load_model.load_submodels(
