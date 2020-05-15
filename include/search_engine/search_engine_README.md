@@ -58,7 +58,7 @@ Se_new_caption = search_engine.SearchEngine(
 ```
 
 #### Step 2: create *image database*
-You only have to create this once! After you have ran this command block of code the *image database* will be stored locally
+You only have to create this once! After you have ran this command block of code the *image database* will be stored locally.
 This will take some time (around 1 min.) to run.
 ```python
 _ = Se_new_caption.prepare_image_database(
@@ -105,7 +105,7 @@ Se_new_image = search_engine.SearchEngine(
 )
 ```
 #### Step 2: create *caption database*
-You only have to create this once! After you have ran this command block of code the *caption database* will be stored locally
+You only have to create this once! After you have ran this command block of code the *caption database* will be stored locally.
 This will take some time (around 1 min.) to run.
 ```python
 _ = Se_new_image.prepare_caption_database(
