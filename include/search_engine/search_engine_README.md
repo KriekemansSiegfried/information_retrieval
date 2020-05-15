@@ -75,14 +75,16 @@ _ = Se_new_caption.prepare_image_database(
 Se_new_caption.new_caption_pipeline(new_id='361092202.jpg#4', k=10)
 ```
 
-<img src="../include/output/figures/triplet_loss/fig1_readme.png?raw=true" alt="drawing" width="600" height="400" />
+<img src="https://github.com/KriekemansSiegfried/information_retrieval/blob/master/include/output/figures/triplet_loss/fig1_readme.png" />
+
+
 
 
 ```python
 # new caption and show 20 most relevant images
 Se_new_caption.new_caption_pipeline(new="Water sea swimming", k=20)
 ```
-<img src="include/output/figures/triplet_loss/fig2_readme.png" alt="drawing" width="600" height="400"/>
+<img src="https://github.com/KriekemansSiegfried/information_retrieval/blob/master/include/output/figures/triplet_loss/fig2_readme.png" />
 
 ### A.2 given a new image retrieve most similar captions
 
@@ -117,7 +119,9 @@ _ = Se_new_image.prepare_caption_database(
 Se_new_image.new_image_pipeline(new_id="361092202.jpg", k=10)
 
 ```
-<img src="../include/output/figures/triplet_loss/fig3_readme.png?raw=true" alt="drawing" width="600" height="400" />
+<p>
+<img src="https://github.com/KriekemansSiegfried/information_retrieval/blob/master/include/output/figures/triplet_loss/fig3_readme.png" />
+ <p>
 
 top 10 most relevant captions (ranked)
 ```python
