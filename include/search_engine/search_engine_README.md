@@ -58,7 +58,7 @@ Se_new_caption = search_engine.SearchEngine(
 ```
 
 #### Step 2: create *image database*
-You only have to create this once! After you have ran this command, you can skip this block of code
+You only have to create this once! After you have ran this command block of code the *image database* will be stored locally
 This will take some time (around 1 min.) to run.
 ```python
 _ = Se_new_caption.prepare_image_database(
@@ -99,7 +99,7 @@ Se_new_image = search_engine.SearchEngine(
 )
 ```
 #### Step 2: create *caption database*
-You only have to create this once! After you have ran this command, you can skip this block of code
+You only have to create this once! After you have ran this command block of code the *caption database* will be stored locally
 This will take some time (around 1 min.) to run.
 ```python
 _ = Se_new_image.prepare_caption_database(
@@ -119,7 +119,7 @@ Se_new_image.new_image_pipeline(new_id="361092202.jpg", k=10)
 ```
 <img src="../include/output/figures/triplet_loss/fig3_readme.png?raw=true" alt="drawing" width="600" height="400" />
 
-most relevant captions
+top 10 most relevant captions (ranked)
 ```python
 >>> Caption ID: 445148321.jpg#0, Caption: A person in the distance hikes among hoodoos with stars visible in the sky ., Distance: 22.0601) 
 >>> Caption ID: 3944884778.jpg#0, Caption: A line of hikers trek across the rocky , sandy soil toward the summit on a hazy day ., Distance: 22.0689) 
