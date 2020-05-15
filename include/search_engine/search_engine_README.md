@@ -120,12 +120,10 @@ Se_new_image.new_image_pipeline(new_id="361092202.jpg", k=10)
 print(Se_new_caption.new)
 ```
 ```python
->>>{'361092202.jpg#4': 'A hiker discovers a feature in an otherwise barren landscape .'}
+>>> {'361092202.jpg#4': 'A hiker discovers a feature in an otherwise barren landscape .'}
 ```
 
-<p>
 <img src="https://github.com/KriekemansSiegfried/information_retrieval/blob/master/include/output/figures/triplet_loss/fig3_readme.png" />
- <p>
 
 top 10 most relevant captions (ranked)
 ```python
