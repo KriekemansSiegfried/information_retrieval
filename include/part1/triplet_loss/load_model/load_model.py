@@ -11,6 +11,6 @@ def load_submodels(model_path, weights_path):
 
     image_model = Model(inputs=model.get_layer('input_image').input,
                         outputs=model.get_layer('output_image').output)
-    caption_model.summary()
-    image_model.summary()
+    # caption_model.summary()
+    # image_model.summary()
     return caption_model, image_model

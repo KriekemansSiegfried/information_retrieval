@@ -319,3 +319,46 @@ def convert_to_triplet_dataset(captions=None, images=None, captions_k=5, p=100,
 
     return (caption_ids_neg, caption_ids_pos), \
            [caption_features_set_neg, caption_features_set_pos, image_features_set], labels
+
+
+def load_captions(load_from_json=False,
+                  path_raw_data="include/input/results_20130124.token",
+                  encoding="utf8",
+                  dir_to_read_save=None):
+
+    # check if we can read from json format
+    if load_from_json and dir_to_read_save is not None:
+        try:
+            captions = json.load(open(os.path.join(dir_to_read_save, "all_data.json"), 'r'))
+        except ValueError:
+            print(f"File 'all_data.json' not found in {dir_to_read_save}")
+
+    else:
+        # open the file as read only
+        file = open(path_raw_data, 'r', encoding=encoding)
+        # read all text
+        text = file.read()
+        # close the file
+        file.close()
+
+        captions = dict()
+
+        # process lines
+        for line in text.split('\n'):
+            # split line by white space
+            tokens = line.split()
+            # ignore lines shorter than two
+            if len(line) < 2:
+                continue
+            # take the first token as the image id, the rest as the description
+            caption_id, caption_desc = tokens[0], tokens[1:]
+            # convert description tokens back to string
+            caption_desc = ' '.join(caption_desc)
+            captions[caption_id] = caption_desc
+        # save
+        if dir_to_read_save is not None:
+            if not os.path.exists(dir_to_read_save):
+                os.makedirs(dir_to_read_save)
+            json.dump(captions, open(os.path.join(dir_to_read_save, "all_data.json"), 'w'))
+
+    return captions
