@@ -461,17 +461,20 @@ class SearchEngine:
     def __init__(self, mode="triplet_loss", clean=True, min_word_length=2, stem=True, unique_only=False):
         super().__init__()
         self.mode = mode
+        self.clean = clean,
+        self.min_word_length = min_word_length,
+        self.stem = stem,
+        self.unique_only = unique_only
         self.image_model = None
         self.caption_model = None
         self.caption_transformer = None
         self.database = None
         self.new = None
         self.new_embedding = None
-        self.caption = None,
-        self.clean = clean,
-        self.min_word_length = min_word_length,
-        self.stem = stem,
-        self.unique_only = unique_only
+        self.caption = None
+        self.ranking = None
+        self.caption_id = None
+        self.image_id = None
 
     def load_models_triplet_loss(self,
                                  model_path=MODEL_JSON_PATH,
@@ -497,6 +500,7 @@ class SearchEngine:
                           verbose=True):
         #  add functionality to load caption id as a new caption
         if new_caption is None and new_caption_id is not None:
+            self.caption_id = new_caption_id
             all_captions = load_captions()
             new_caption = {new_caption_id: all_captions[new_caption_id]}
             self.new = copy.deepcopy(new_caption)
@@ -528,10 +532,11 @@ class SearchEngine:
 
     def embed_new_image(self,
                         new_image_vector=None,
-                        image_id=None):
+                        image_id="361092202.jpg"):
 
         # load database_images in case a image_id is provided
         if image_id is not None:
+                self.image_id = image_id
                 database_images = self.load_database_images()
         # check if model is loaded
         if self.image_embedder is None:
@@ -589,7 +594,57 @@ class SearchEngine:
         # get lowest ids
         lowest_ids = self.database["id"][lowest_idx].flatten().tolist()
         # return in dictionary format
-        return dict(zip(lowest_ids, lowest_dist))
+        self.ranking = dict(zip(lowest_ids, lowest_dist))
+
+    def plot_images(
+            self,
+            image_dir="include/input/flickr30k-images/",
+            nrows=2,
+            ncols=5,
+            figsize=(20, 10),
+            title_fontsize=30,
+            title_y=1.05,
+            title_x=0.5):
+        fig, axes = plt.subplots(nrows, ncols, figsize=figsize)
+        i = 0
+        for key, value in self.ranking.items():
+            img = cv2.imread(image_dir + key, cv2.COLOR_BGR2RGB)
+            axes.flatten()[i].imshow(img, interpolation='bicubic')
+            axes.flatten()[i].set(title=f'Distance: {round(value, 4)}')
+            plt.setp(axes.flatten()[i].get_xticklabels(), visible=False)
+            plt.setp(axes.flatten()[i].get_yticklabels(), visible=False)
+            axes.flatten()[i].tick_params(axis='both', which='both', length=0)
+            axes.flatten()[i].xaxis.grid(False)
+            axes.flatten()[i].yaxis.grid(False)
+            i += 1
+        title = f"Ranking top {nrows * ncols} images"
+        plt.suptitle(title, x=title_x, y=title_y, fontsize=title_fontsize)
+        plt.tight_layout()
+        plt.show()
+
+    def print_captions(self,
+                       image_dir="include/input/flickr30k-images/",
+                       figsize=(10, 8)):
+        if self.id is not None:
+            plt.figure(figsize=figsize)
+            plt.grid(b=None)  # remove grid lines
+            plt.axis('off')  # remove ticks axes
+            img = cv2.imread(image_dir + self.image_id, cv2.COLOR_BGR2RGB)
+            plt.imshow(img)
+            plt.show()
+
+        captions_ids = list(self.ranking.keys())
+        caption_distances = list(ranking_captions.values())
+        if self.database is None:
+            self.database = self.load_database_captions()
+        caption_text = []
+        for i, id in enumerate(captions_ids):
+            text = self.database['original_captions'][id]
+            caption_text.append(text)
+            print(f"Caption ID: {id}, Caption: {text}, Distance: {round(caption_distances[i], 4)}) ")
+        # pandas data frame format
+        out = [captions_ids, caption_text, caption_distances]
+        return pd.DataFrame(out, index=["caption_id", "caption_text", "distance"]).T
 
 
     def new_image_pipeline(self):
@@ -601,6 +656,7 @@ class SearchEngine:
         # step 3) compute distance and rank
         self.rank()
         # step 4) visualize results
+        self.print_captions()
 
     def new_caption_pipeline(self):
 
@@ -611,3 +667,4 @@ class SearchEngine:
         # step 3) compute distance and rank
         self.rank()
         # step 4) print visualize results
+        self.plot_images()
