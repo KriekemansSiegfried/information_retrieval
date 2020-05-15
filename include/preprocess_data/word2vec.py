@@ -12,7 +12,7 @@ def convert_to_word2vec(captions):
             caption_array = [word for word in word_tokenize(caption_set[caption_id])]
             data.append(caption_array)
     model = gensim.models.Word2Vec(data, min_count=1,
-                                   size=100, window=5)
+                                   size=200, window=5)
 
     dicts = []
     for caption_set in captions:
