@@ -113,7 +113,7 @@ _ = Se_new_image.prepare_caption_database(
 # Step 3: run pipeline
 # print top 10 captions for image "361092202.jpg"
 Se_new_image.new_image_pipeline(new_id="361092202.jpg", k=10)
-
+plt.savefig("include/output/figures/triplet_loss/fig3_readme.png")
 
 
 # B) CROSS MODAL MODEl (PART 2)

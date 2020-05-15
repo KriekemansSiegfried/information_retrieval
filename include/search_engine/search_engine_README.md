@@ -75,7 +75,7 @@ _ = Se_new_caption.prepare_image_database(
 Se_new_caption.new_caption_pipeline(new_id='361092202.jpg#4', k=10)
 ```
 
-<img src="../include/output/figures/triplet_loss/fig1_readme.png?raw=true" alt="drawing" width="500" height="300" />
+<img src="../include/output/figures/triplet_loss/fig1_readme.png?raw=true" alt="drawing" width="600" height="400" />
 
 
 ```python
@@ -115,6 +115,23 @@ _ = Se_new_image.prepare_caption_database(
 ```python
 # print top 10 captions for image "361092202.jpg"
 Se_new_image.new_image_pipeline(new_id="361092202.jpg", k=10)
+
+```
+<img src="../include/output/figures/triplet_loss/fig3_readme.png?raw=true" alt="drawing" width="600" height="400" />
+
+most relevant captions
+```python
+>>> Caption ID: 445148321.jpg#0, Caption: A person in the distance hikes among hoodoos with stars visible in the sky ., Distance: 22.0601) 
+>>> Caption ID: 3944884778.jpg#0, Caption: A line of hikers trek across the rocky , sandy soil toward the summit on a hazy day ., Distance: 22.0689) 
+>>> Caption ID: 2245989501.jpg#1, Caption: A man leads a caravan of six camels and their riders up a sandy hill , with rocky mountains in the background ., Distance: 22.0715) 
+>>> Caption ID: 2555545571.jpg#3, Caption: Person with afro shaking hands with crowd ., Distance: 22.0828) 
+>>> Caption ID: 445148321.jpg#4, Caption: The night sky in the desert ., Distance: 22.1819) 
+>>> Caption ID: 2544134113.jpg#0, Caption: The silhouettes of men against a cloudy yet bright sky ., Distance: 22.1868) 
+>>> Caption ID: 2245989501.jpg#3, Caption: Several persons on the backs of camels traversing a hill ., Distance: 22.2413) 
+>>> aption ID: 425895906.jpg#4, Caption: A man and his camel in the dusty desert ., Distance: 22.3032) 
+>>> Caption ID: 3224560800.jpg#2, Caption: A man dances with a fire baton at night ., Distance: 22.3338) 
+>>> Caption ID: 352981175.jpg#0, Caption: One mountaineer is kneeling on the ground next to another mountaineer who is standing ., Distance: 22.3689) 
+
 ```
 
 
