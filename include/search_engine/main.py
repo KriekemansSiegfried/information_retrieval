@@ -35,7 +35,7 @@ MODEL_WEIGHTS_PATH = 'include/output/model/triplet_loss/best_model.h5'
 
 # %%
 # -------------------------------------------------------------------------------
-# 1) HELPER FUNCTIONS (NOT FINISHED)
+# 1) HELPER FUNCTIONS
 # -------------------------------------------------------------------------------
 
 def embed_new_caption(new_caption=None,
@@ -340,9 +340,9 @@ def print_captions(dic=None,
 # 2) LOAD MODELS
 # -------------------------------------------------------------------------------
 
-"""
-1.A: Load models for triplet loss (PART 1)
-"""
+# ---
+# 1.A: Load models for triplet loss (PART 1)
+# ---
 
 # %% Import best trained caption and image model
 print("TRIPLET LOSS: Loading models")
@@ -353,9 +353,9 @@ caption_model_triplet, image_model_triplet = load_model.load_submodels(
 # import bow model
 transformer_triplet_loss = joblib.load(SAVE_BOW_MODEL)
 
-"""
-1.B: Load models (PART2) TODO add models PART 2
-"""
+# ---
+# 1.B: Load models (PART2) TODO add models PART 2
+# ---
 
 # %%
 # -------------------------------------------------------------------------------
