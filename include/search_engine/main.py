@@ -301,8 +301,8 @@ def plot_images(
     fig, axes = plt.subplots(nrows, ncols, figsize=figsize)
     i = 0
     for key, value in dic.items():
-        img = cv2.imread(image_dir + key, cv2.COLOR_BGR2RGB)
-        axes.flatten()[i].imshow(img, interpolation='bicubic')
+        img = cv2.imread(image_dir + key)
+        axes.flatten()[i].imshow(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
         axes.flatten()[i].set(title=f'Distance: {round(value, 4)}')
         plt.setp(axes.flatten()[i].get_xticklabels(), visible=False)
         plt.setp(axes.flatten()[i].get_yticklabels(), visible=False)
@@ -325,8 +325,8 @@ def print_captions(dic=None,
         plt.figure(figsize=figsize)
         plt.grid(b=None)  # remove grid lines
         plt.axis('off')  # remove ticks axes
-        img = cv2.imread(image_dir + image_id, cv2.COLOR_BGR2RGB)
-        plt.imshow(img)
+        img = cv2.imread(image_dir + image_id)
+        plt.imshow(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
         plt.show()
 
     captions_ids = list(dic.keys())
@@ -608,8 +608,8 @@ class SearchEngine:
         fig, axes = plt.subplots(nrows, ncols, figsize=figsize)
         i = 0
         for key, value in self.ranking.items():
-            img = cv2.imread(image_dir + key, cv2.COLOR_BGR2RGB)
-            axes.flatten()[i].imshow(img, interpolation='bicubic')
+            img = cv2.imread(image_dir + key)
+            axes.flatten()[i].imshow(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
             axes.flatten()[i].set(title=f'Distance: {round(value, 4)}')
             plt.setp(axes.flatten()[i].get_xticklabels(), visible=False)
             plt.setp(axes.flatten()[i].get_yticklabels(), visible=False)
@@ -629,8 +629,8 @@ class SearchEngine:
             plt.figure(figsize=figsize)
             plt.grid(b=None)  # remove grid lines
             plt.axis('off')  # remove ticks axes
-            img = cv2.imread(image_dir + self.image_id, cv2.COLOR_BGR2RGB)
-            plt.imshow(img)
+            img = cv2.imread(image_dir + self.image_id)
+            plt.imshow(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
             plt.show()
 
         captions_ids = list(self.ranking.keys())
