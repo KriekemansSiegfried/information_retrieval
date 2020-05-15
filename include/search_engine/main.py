@@ -81,6 +81,7 @@ _ = Se_new_caption.prepare_image_database(
 # Step 3: run pipeline
 # show 10 closest images for caption '361092202.jpg#4'
 Se_new_caption.new_caption_pipeline(new_id='361092202.jpg#4', k=10)
+print(Se_new_caption.new)
 plt.tight_layout()
 plt.savefig("include/output/figures/triplet_loss/fig1_readme.png")
 # %%
