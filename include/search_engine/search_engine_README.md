@@ -128,7 +128,7 @@ most relevant captions
 >>> Caption ID: 445148321.jpg#4, Caption: The night sky in the desert ., Distance: 22.1819) 
 >>> Caption ID: 2544134113.jpg#0, Caption: The silhouettes of men against a cloudy yet bright sky ., Distance: 22.1868) 
 >>> Caption ID: 2245989501.jpg#3, Caption: Several persons on the backs of camels traversing a hill ., Distance: 22.2413) 
->>> aption ID: 425895906.jpg#4, Caption: A man and his camel in the dusty desert ., Distance: 22.3032) 
+>>> Caption ID: 425895906.jpg#4, Caption: A man and his camel in the dusty desert ., Distance: 22.3032) 
 >>> Caption ID: 3224560800.jpg#2, Caption: A man dances with a fire baton at night ., Distance: 22.3338) 
 >>> Caption ID: 352981175.jpg#0, Caption: One mountaineer is kneeling on the ground next to another mountaineer who is standing ., Distance: 22.3689) 
 
