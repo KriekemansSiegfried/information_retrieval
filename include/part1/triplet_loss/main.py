@@ -3,7 +3,7 @@
 import json
 import numpy as np
 from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.externals import joblib
+import joblib
 
 # visualize
 import matplotlib.pyplot as plt
@@ -41,9 +41,9 @@ sns.set()
 # %% read in image model
 image_train, image_val, image_test = preprocessing.read_split_images(path=PATH)
 #
-#%% read in caption model and split in train, validation and test set and save it
+# %% read in caption model and split in train, validation and test set and save it
 caption_train, caption_val, caption_test = preprocessing.read_split_captions(
-     path=PATH, document='results_20130124.token', encoding="utf8", dir="include/output/data")
+    path=PATH, document='results_20130124.token', encoding="utf8", dir="include/output/data")
 
 # %% in case you already have ran the cel above once before and don't want to run it over and over
 # train
@@ -84,7 +84,7 @@ joblib.dump(c_vec, SAVE_BOW_MODEL)
 # load your model (just as a test)
 # c_vec = joblib.load(SAVE_BOW_MODEL)
 # %% train
-n_images_train = 2000  # whole dataset:  n_images_train = 29783
+n_images_train = 29783  # whole dataset:  n_images_train = 29783
 caption_id_train, dataset_train, labels_train = preprocessing.convert_to_triplet_dataset(
     captions=caption_train_bow, images=image_train, captions_k=5,
     p=100, n_row=n_images_train, todense=True
@@ -120,7 +120,7 @@ model_json = model.to_json()
 with open(MODEL_JSON_PATH, 'w') as json_file:
     json_file.write(model_json)
 
-plot_model(model, to_file=SAVE_FIGURES+'architecture.png',
+plot_model(model, to_file=SAVE_FIGURES + 'architecture.png',
            show_shapes=True, show_layer_names=True)
 
 # %%
@@ -128,13 +128,13 @@ reduce_lr = ReduceLROnPlateau(
     monitor='loss', factor=0.3, patience=1, min_lr=0.00001
 )
 
-callbacks = [EarlyStopping(monitor='val_loss', patience=5),
+callbacks = [EarlyStopping(monitor='val_loss', patience=10),
              ModelCheckpoint(filepath=MODEL_WEIGHTS_PATH, monitor='val_loss',
                              verbose=1, save_best_only=True, mode='min'), reduce_lr]
 
 # %%
 real_epochs = 25
-batch_size = 256
+batch_size = 512
 model.fit(
     x=dataset_train,
     y=labels_train,
@@ -211,9 +211,9 @@ ranking_captions = ranking.rank_embedding(
 # %% 3 a) compute MAP@10 images
 average_precision_images = ranking.average_precision(ranking_images, gtp=1)
 print(f"{average_precision_images.head()}")
-print(f"Mean average precision @10 is: {round(average_precision_images.mean()[0]*100, 4)} %")
+print(f"Mean average precision @10 is: {round(average_precision_images.mean()[0] * 100, 4)} %")
 
 # %% 3 b) compute MAP@10 captions
 average_precision_captions = ranking.average_precision(ranking_captions, gtp=5)
 print(f"{average_precision_captions.head()}")
-print(f"Mean average precision @10 is: {round(average_precision_captions.mean()[0]*100, 4)} %")
+print(f"Mean average precision @10 is: {round(average_precision_captions.mean()[0] * 100, 4)} %")

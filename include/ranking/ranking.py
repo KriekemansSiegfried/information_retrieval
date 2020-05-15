@@ -55,7 +55,7 @@ def rank_embedding(caption_embed=None,
             print("Choose a listed distance metric: available distance metrics include L2 and Hamming distance")
 
         # get indices of distances (dist) from low to high
-        rank_all = np.argpartition(dist, kth=range(len(dist)))
+        rank_all = np.argsort(dist)
         # get distances (low to high)
         dist_all = dist[rank_all].tolist()
         # get 10 lowest distances
@@ -97,10 +97,6 @@ def average_precision(dic=None, gtp=1):
     store_ap = {}
     print(f"The number of ground true positives is {gtp} when computing the average precision")
 
-    quotient = 0
-    for x in range(gtp):
-        quotient += + 1 / (x + 1)
-
     for key, value in dic.items():
 
         # get the id's of the ranked images/captions
@@ -120,7 +116,7 @@ def average_precision(dic=None, gtp=1):
                 else:
                     ap.append(0)
 
-            store_ap[key] = 1 / quotient * sum(ap)
+            store_ap[key] = (1 / gtp) * sum(ap)
         else:
             store_ap[key] = 0
 

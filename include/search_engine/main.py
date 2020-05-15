@@ -4,7 +4,7 @@
 
 # data transformations
 import numpy as np
-from sklearn.externals import joblib
+import joblib
 import pandas as pd
 from numpy.linalg import norm
 from scipy.sparse import isspmatrix
@@ -24,6 +24,7 @@ import seaborn as sns
 from include.part1.triplet_loss.load_model import load_model
 from include.preprocess_data import preprocessing
 from include.util.util import print_progress_bar
+from include.util.util import get_batch
 
 # %% GLOBAL VARIABLES (indicated in CAPITAL letters)
 sns.set()
@@ -31,45 +32,20 @@ SAVE_BOW_MODEL = 'include/output/model/triplet_loss/caption_bow_model.pkl'
 MODEL_JSON_PATH = 'include/output/model/triplet_loss/best_model.json'
 MODEL_WEIGHTS_PATH = 'include/output/model/triplet_loss/best_model.h5'
 
-# -------------------------------------------------------------------------------
-# 1) LOAD MODELS
-# -------------------------------------------------------------------------------
 
-"""
-1.A: Load models for triplet loss (PART 1)
-"""
-
-# %% Import best trained caption and image model
-print("TRIPLET LOSS: Loading models")
-caption_model_triplet, image_model_triplet = load_model.load_submodels(
-    model_path=MODEL_JSON_PATH, weights_path=MODEL_WEIGHTS_PATH
-)
-
-# import bow model
-transformer_triplet_loss = joblib.load(SAVE_BOW_MODEL)
-
-"""
-1.B: Load models (PART2) TODO add models PART 2
-"""
-
-# -------------------------------------------------------------------------------
-# 2) Specify Caption/ Caption_ID or give image ID
-# -------------------------------------------------------------------------------
 # %%
-
 # -------------------------------------------------------------------------------
-# HELPER FUNCTIONS (NOT FINISHED)
+# 1) HELPER FUNCTIONS (NOT FINISHED)
 # -------------------------------------------------------------------------------
 
 def embed_new_caption(new_caption=None,
                       new_caption_id=None,
                       clean=True,
                       transformer=None,
-                      caption_embedder=caption_model_triplet,
+                      caption_embedder=None,
                       min_word_length=2,
                       stem=True,
                       unique_only=False):
-
     #  add functionality to load caption id as a new caption
     if new_caption is None and new_caption_id is not None:
         all_captions = load_captions()
@@ -81,6 +57,7 @@ def embed_new_caption(new_caption=None,
         new_caption,
         transformer=transformer,
         stem=stem,
+        clean=clean,
         unique_only=unique_only,
         min_word_length=min_word_length)
 
@@ -99,7 +76,7 @@ def preprocess_caption(caption=None,
                        unique_only=False):
     if clean:
         caption = preprocessing.clean_descriptions(
-            descriptions=caption,
+            descriptions=copy.deepcopy(caption),
             min_word_length=min_word_length,
             stem=stem,
             unique_only=unique_only,
@@ -107,7 +84,7 @@ def preprocess_caption(caption=None,
         )
 
     # convert caption to either bow or word2vec
-    trans = transformer.transform(caption)
+    trans = transformer.transform(caption.values())
     return trans
 
 
@@ -115,7 +92,6 @@ def embed_new_image(new_image_vector=None,
                     image_embedder=None,
                     database_images=None,
                     image_id=None):
-
     #  add functionality to load image id as a new image
     if new_image_vector is None and image_id is not None:
         idx = np.where(database_images["id"] == image_id)[0][0]
@@ -132,7 +108,6 @@ def prepare_image_database(path='include/input/image_features.csv',
                            filename_database="database_images.pkl",
                            batch_size=512,
                            verbose=False):
-
     """
     :param path:
     :return:
@@ -151,7 +126,7 @@ def prepare_image_database(path='include/input/image_features.csv',
         # to print progress
         i = 0
         # needs to be greater than 1
-        n = max(1, len(images_x)//batch_size)
+        n = max(1, len(images_x) // batch_size)
     embedding = []
     for batch in get_batch(range(0, len(images_x)), batch_size):
         batch_embedding = image_embedder.predict(images_x[batch])
@@ -167,7 +142,7 @@ def prepare_image_database(path='include/input/image_features.csv',
         "id": image_ids,
         "x": images_x,
         "embedding": embedding
-            }
+    }
     # save
     if save_dir_database is not None:
         print("saving image database")
@@ -177,24 +152,21 @@ def prepare_image_database(path='include/input/image_features.csv',
         pickle.dump(database_images, f)
     return database_images
 
-def get_batch(iterable, n=1):
-    l = len(iterable)
-    for ndx in range(0, l, n):
-        yield iterable[ndx:min(ndx + n, l)]
 
-def prepare_caption_database(path_raw_data="inlcude/input/results_20130124.token",
-                             path_json_format="include/output/data/",
-                             transformer=None,
-                             caption_embedder=None,
-                             clean=True,
-                             stem=True,
-                             min_word_length=2,
-                             batch_size=1024,
-                             unique_only=False,
-                             save_dir_database=None,
-                             filename_database="database_captions.pkl",
-                             verbose=False):
 
+def prepare_caption_database(
+        path_raw_data="inlcude/input/results_20130124.token",
+        path_json_format="include/output/data/",
+        transformer=None,
+        caption_embedder=None,
+        clean=True,
+        stem=True,
+        min_word_length=2,
+        batch_size=1024,
+        unique_only=False,
+        save_dir_database=None,
+        filename_database="database_captions.pkl",
+        verbose=False):
     if verbose:
         print("loading captions")
     orig_captions = load_captions(path_raw_data=path_raw_data, dir_to_read_save=path_json_format)
@@ -248,11 +220,11 @@ def prepare_caption_database(path_raw_data="inlcude/input/results_20130124.token
         joblib.dump(database_captions, os.path.join(save_dir_database, filename_database))
     return database_captions
 
-def load_captions(load_from_json=False,
-                          path_raw_data="include/input/results_20130124.token",
-                          encoding="utf8",
-                          dir_to_read_save=None):
 
+def load_captions(load_from_json=False,
+                  path_raw_data="include/input/results_20130124.token",
+                  encoding="utf8",
+                  dir_to_read_save=None):
     # check if we can read from json format
     if load_from_json and dir_to_read_save is not None:
         try:
@@ -291,21 +263,18 @@ def load_captions(load_from_json=False,
     return captions
 
 
-
 def rank(distance_metric="L2",
          new_embedding=None,
          database_embedding=None,
          database_id=None,
          k=10):
-
     assert distance_metric in ["L2", "Hamming"]
 
     if distance_metric == "L2":
         dist = norm(database_embedding - new_embedding, ord=2, axis=1)
     else:
-        pass  # TODO: add hamming distance
+        dist = 1 - np.mean((database_embedding - new_embedding == 0), axis=1)
 
-    # convert to numpy array
     # find lowest indices
     lowest_idx = np.argsort(dist)[0:k]
     # get lowest distance
@@ -315,7 +284,7 @@ def rank(distance_metric="L2",
     # return in dictionary format
     return dict(zip(lowest_ids, lowest_dist))
 
-# %%
+
 def plot_images(dic=None,
                 image_dir="include/input/flickr30k-images/",
                 nrows=2,
@@ -324,7 +293,6 @@ def plot_images(dic=None,
                 title_fontsize=30,
                 title_y=1.05,
                 title_x=0.5):
-
     fig, axes = plt.subplots(nrows, ncols, figsize=figsize)
     i = 0
     for key, value in dic.items():
@@ -342,18 +310,18 @@ def plot_images(dic=None,
     plt.tight_layout()
     plt.show()
 
+
 def print_captions(dic=None,
                    database_captions=None,
                    image_id=None,
                    image_dir="include/input/flickr30k-images/",
                    figsize=(10, 8)):
-
     if image_id is not None:
         plt.figure(figsize=figsize)
         plt.grid(b=None)  # remove grid lines
-        plt.axis('off')   # remove ticks axes
+        plt.axis('off')  # remove ticks axes
         img = cv2.imread(image_dir + image_id, cv2.COLOR_BGR2RGB)
-        plt.imshow(img, interpolation='bicubic')
+        plt.imshow(img)
         plt.show()
 
     captions_ids = list(dic.keys())
@@ -362,13 +330,40 @@ def print_captions(dic=None,
     for i, id in enumerate(captions_ids):
         text = database_captions['original_captions'][id]
         caption_text.append(text)
-        print(f"Caption ID: {id}, Caption: {text}, Distance: {round(caption_distances[i],4)}) ")
+        print(f"Caption ID: {id}, Caption: {text}, Distance: {round(caption_distances[i], 4)}) ")
     # pandas data frame format
     out = [captions_ids, caption_text, caption_distances]
     return pd.DataFrame(out, index=["caption_id", "caption_text", "distance"]).T
 
 
-#%%
+# -------------------------------------------------------------------------------
+# 2) LOAD MODELS
+# -------------------------------------------------------------------------------
+
+"""
+1.A: Load models for triplet loss (PART 1)
+"""
+
+# %% Import best trained caption and image model
+print("TRIPLET LOSS: Loading models")
+caption_model_triplet, image_model_triplet = load_model.load_submodels(
+    model_path=MODEL_JSON_PATH, weights_path=MODEL_WEIGHTS_PATH
+)
+
+# import bow model
+transformer_triplet_loss = joblib.load(SAVE_BOW_MODEL)
+
+"""
+1.B: Load models (PART2) TODO add models PART 2
+"""
+
+# %%
+# -------------------------------------------------------------------------------
+# 3) Specify Caption/ Caption_ID or give image ID
+# -------------------------------------------------------------------------------
+
+# %% 3.1) read in databases to compare new image/caption with
+
 database_images = prepare_image_database(
     path='include/input/image_features.csv',
     image_embedder=image_model_triplet,
@@ -391,27 +386,22 @@ database_captions = prepare_caption_database(
 )
 
 # %%
-# read in databases
-
-# %%
 database_images = joblib.load("include/output/data/triplet_loss/database_images/database_images.dat")
 database_captions = joblib.load("include/output/data/triplet_loss/database_captions/database_captions.dat")
 
-# %% new caption embedding
+# %% 3.2 new caption embedding and rank images
 
-new_caption = {'New_Caption': 'DOG playing with a ball in the garden.!!!'}
+new_caption = {'New_Caption': 'Swimming water in the sea ffsdè!fèsdf'}
 
-caption = embed_new_caption(new_caption=None,
-  new_caption_id="1000092795.jpg#1",
-  clean=True,
-  transformer=transformer_triplet_loss,
-  caption_embedder=caption_model_triplet,
-  min_word_length=2,
-  stem=True,
-  unique_only=False
-)
-
-# %%
+caption = embed_new_caption(new_caption=new_caption,
+                            new_caption_id=None,
+                            clean=True,
+                            transformer=transformer_triplet_loss,
+                            caption_embedder=caption_model_triplet,
+                            min_word_length=2,
+                            stem=True,
+                            unique_only=False
+                            )
 ranking_images = rank(
     distance_metric="L2",
     new_embedding=caption,
@@ -420,14 +410,25 @@ ranking_images = rank(
     k=10
 )
 
+# TODO fix upper title
+plot_images(
+    dic=ranking_images,
+    title_fontsize=30,
+    figsize=(20, 10),
+    title_y=1.10
+)
 
-# %%
-image = embed_new_image(new_image_vector=None,
-                    image_embedder=image_model_triplet,
-                    database_images=database_images,
-                    image_id='10002456.jpg')
 
-# %%
+# %% new image embedding and rank captions
+
+new_image_id = '10101477.jpg'
+image = embed_new_image(
+    new_image_vector=None,
+    image_embedder=image_model_triplet,
+    database_images=database_images,
+    image_id=new_image_id
+)
+
 ranking_captions = rank(
     distance_metric="L2",
     new_embedding=image,
@@ -436,16 +437,35 @@ ranking_captions = rank(
     k=10
 )
 
+out = print_captions(
+    dic=ranking_captions,
+    database_captions=database_captions,
+    image_id=new_image_id,
+    image_dir="include/input/flickr30k-images/"
+)
+
 # %%
-out = print_captions(dic=ranking_captions,
-                     database_captions=database_captions,
-                     image_id='10002456.jpg',
-                     image_dir="include/input/flickr30k-images/")
 
 
-# %%
-# TODO fix upper title
-plot_images(dic=ranking_images,
-            title_fontsize=30,
-            figsize=(20, 10),
-            title_y=1.10)
+#%% TODO create wrapper
+
+
+class SearchEngine:
+
+    def __init__(self):
+        super().__init__()
+
+
+    def new_image_pipeline(self):
+        pass
+        # step 1) embed new image
+        # step 2) load caption database (already embedded)
+        # step 3) compute distance and rank
+        # step 4) visualize results
+
+    def new_caption_pipeline(self):
+        pass
+        # step 1) embed new caption
+        # step 2) load image database (already embedded)
+        # step 3) compute distance and rank
+        # step 4) print visualize results
