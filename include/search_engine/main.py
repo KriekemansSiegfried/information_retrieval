@@ -32,6 +32,10 @@ SAVE_BOW_MODEL = 'include/output/model/triplet_loss/caption_bow_model.pkl'
 MODEL_JSON_PATH = 'include/output/model/triplet_loss/best_model.json'
 MODEL_WEIGHTS_PATH = 'include/output/model/triplet_loss/best_model.h5'
 
+# TODO:
+# - fix suptitle plot_images: should print the caption in the title
+# - make class object
+# - add functionality for part 2
 
 # %%
 # -------------------------------------------------------------------------------
@@ -76,7 +80,7 @@ def preprocess_caption(caption=None,
                        unique_only=False):
     if clean:
         caption = preprocessing.clean_descriptions(
-            descriptions=copy.deepcopy(caption),
+            descriptions=caption,
             min_word_length=min_word_length,
             stem=stem,
             unique_only=unique_only,
@@ -285,14 +289,15 @@ def rank(distance_metric="L2",
     return dict(zip(lowest_ids, lowest_dist))
 
 
-def plot_images(dic=None,
-                image_dir="include/input/flickr30k-images/",
-                nrows=2,
-                ncols=5,
-                figsize=(20, 10),
-                title_fontsize=30,
-                title_y=1.05,
-                title_x=0.5):
+def plot_images(
+        dic=None,
+        image_dir="include/input/flickr30k-images/",
+        nrows=2,
+        ncols=5,
+        figsize=(20, 10),
+        title_fontsize=30,
+        title_y=1.05,
+        title_x=0.5):
     fig, axes = plt.subplots(nrows, ncols, figsize=figsize)
     i = 0
     for key, value in dic.items():
@@ -393,15 +398,16 @@ database_captions = joblib.load("include/output/data/triplet_loss/database_capti
 
 new_caption = {'New_Caption': 'Swimming water in the sea ffsdè!fèsdf'}
 
-caption = embed_new_caption(new_caption=new_caption,
-                            new_caption_id=None,
-                            clean=True,
-                            transformer=transformer_triplet_loss,
-                            caption_embedder=caption_model_triplet,
-                            min_word_length=2,
-                            stem=True,
-                            unique_only=False
-                            )
+caption = embed_new_caption(
+    new_caption=new_caption,
+    new_caption_id=None,
+    clean=True,
+    transformer=transformer_triplet_loss,
+    caption_embedder=caption_model_triplet,
+    min_word_length=2,
+    stem=True,
+    unique_only=False
+)
 ranking_images = rank(
     distance_metric="L2",
     new_embedding=caption,
@@ -452,20 +458,156 @@ out = print_captions(
 
 class SearchEngine:
 
-    def __init__(self):
+    def __init__(self, mode="triplet_loss", clean=True, min_word_length=2, stem=True, unique_only=False):
         super().__init__()
+        self.mode = mode
+        self.image_model = None
+        self.caption_model = None
+        self.caption_transformer = None
+        self.database = None
+        self.new = None
+        self.new_embedding = None
+        self.caption = None,
+        self.clean = clean,
+        self.min_word_length = min_word_length,
+        self.stem = stem,
+        self.unique_only = unique_only
+
+    def load_models_triplet_loss(self,
+                                 model_path=MODEL_JSON_PATH,
+                                 weights_path=MODEL_WEIGHTS_PATH,
+                                 verbose=True):
+        if verbose:
+            print("TRIPLET LOSS: Loading models")
+        self.caption_model, self.image_model = load_model.load_submodels(
+            model_path=model_path, weights_path=weights_path
+        )
+
+    def load_caption_transformer_triplet_loss(self, path=SAVE_BOW_MODEL, verbose=True):
+
+        if verbose:
+            print("TRIPLET LOSS: Loading caption transformer")
+        self.caption_transformer = joblib.load(path)
+
+
+
+    def embed_new_caption(self,
+                          new_caption=None,
+                          new_caption_id="361092202.jpg#4",
+                          verbose=True):
+        #  add functionality to load caption id as a new caption
+        if new_caption is None and new_caption_id is not None:
+            all_captions = load_captions()
+            new_caption = {new_caption_id: all_captions[new_caption_id]}
+            self.new = copy.deepcopy(new_caption)
+            if verbose:
+                print(new_caption)
+
+        # preprocess caption: clean and transform to either w2v or bow
+        new_caption = self.preprocess_caption(caption=new_caption)
+
+        # check if format is sparse
+        if isspmatrix(new_caption):
+            new_caption = new_caption.todense()
+
+        # check if model is loaded
+        if self.caption_model is None:
+            if self.mode == "triplet_loss":
+                self.load_models_triplet_loss()
+            else:
+                # TODO add model part 2
+                pass
+
+        self.new_embedding = self.caption_model(new_caption)
+
+    def load_database_images(self, path="include/output/data/triplet_loss/database_images/database_images.dat"):
+        return joblib.load(path)
+
+    def load_database_captions(self, path="include/output/data/triplet_loss/database_captions/database_captions.dat"):
+        return joblib.load(path)
+
+    def embed_new_image(self,
+                        new_image_vector=None,
+                        image_id=None):
+
+        # load database_images in case a image_id is provided
+        if image_id is not None:
+                database_images = self.load_database_images()
+        # check if model is loaded
+        if self.image_embedder is None:
+            if self.mode == "triplet_loss":
+                self.load_models_triplet_loss()
+            else:
+                # TODO add model part 2
+                pass
+
+        #  add functionality to load image id as a new image
+        if new_image_vector is None and image_id is not None:
+            idx = np.where(database_images["id"] == image_id)[0][0]
+            new_image_vector = database_images["x"][idx]
+            # reshape to predict: has to be (1, F) format with F the dimensons of the embedding
+            new_image_vector = (new_image_vector.reshape(1, new_image_vector.shape[0]))
+        # embedding
+        self.new_embedding = self.image_embedder.predict(new_image_vector)
+
+
+    def preprocess_caption(self, caption):
+        if self.clean:
+            caption = preprocessing.clean_descriptions(
+                descriptions=caption,
+                min_word_length=self.min_word_length,
+                stem=self.stem,
+                unique_only=self.unique_only,
+                verbose=False
+            )
+
+        # convert caption to either bow or word2vec
+        if self.caption_transformer is None:
+            if self.mode == "triplet_loss":
+                self.load_caption_transformer_triplet_loss()
+            else:
+                # TODO add transformer part 2
+                pass
+        trans = self.caption_transformer.transform(caption.values())
+        return trans
+
+    def rank(self,
+             distance_metric="L2",
+             k=10):
+
+        assert distance_metric in ["L2", "Hamming"]
+
+        if distance_metric == "L2":
+            dist = norm(self.database["embedding"] - self.new_embedding, ord=2, axis=1)
+        else:
+            dist = 1 - np.mean((self.database["embedding"] - self.new_embedding == 0), axis=1)
+
+        # find lowest indices
+        lowest_idx = np.argsort(dist)[0:k]
+        # get lowest distance
+        lowest_dist = dist[lowest_idx].flatten().tolist()
+        # get lowest ids
+        lowest_ids = self.database["id"][lowest_idx].flatten().tolist()
+        # return in dictionary format
+        return dict(zip(lowest_ids, lowest_dist))
 
 
     def new_image_pipeline(self):
-        pass
+
         # step 1) embed new image
+        self.embed_new_caption(self.new)
         # step 2) load caption database (already embedded)
+        self.database = self.load_database_captions()
         # step 3) compute distance and rank
+        self.rank()
         # step 4) visualize results
 
     def new_caption_pipeline(self):
-        pass
+
         # step 1) embed new caption
+        self.embed_new_image(self.new)
         # step 2) load image database (already embedded)
+        self.database = self.load_database_images()
         # step 3) compute distance and rank
+        self.rank()
         # step 4) print visualize results
