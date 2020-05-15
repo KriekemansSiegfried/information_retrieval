@@ -18,7 +18,7 @@ def print_progress_bar(i=None, maximum=None, post_text="Finish", n_bar=10):
     """
     j = i / maximum
     sys.stdout.write('\r')
-    sys.stdout.write(f"[{'=' * int(n_bar * j):{n_bar}s}] {int(100 * j)}%  {post_text}")
+    sys.stdout.write(f"|{'=' * int(n_bar * j):{n_bar}s}| {int(100 * j)}%  {post_text}")
     sys.stdout.flush()
 
 

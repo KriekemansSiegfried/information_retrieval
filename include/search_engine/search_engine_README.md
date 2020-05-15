@@ -1,22 +1,17 @@
-# ----------------------------------------------------------------
-# 2) LOAD LIBRARIES
-# ----------------------------------------------------------------
+# Search engine
+ - retrieves most relevant captions given a new image
+ - retrieves most relevant images given a new caption or caption_id
+ 
+ # Usage
+
+
+## Import search engine 
+```python
 from include.search_engine.load_engine import search_engine
-import seaborn as sns
-sns.set()
-
-# TODO:
-# - fix suptitle plot_images: should print the caption in the title
-# - add functionality for part 2
-# - make readme
-
-
-# ----------------------------------------------------------------
-# 1) GLOBAL VARIABLES
-# ----------------------------------------------------------------
-
-# %% GLOBAL VARIABLES (indicated in CAPITAL letters)
-
+ 
+```
+## Define Global Paths
+```python
 # COMMON PATHS
 
 # path raw image features
@@ -41,22 +36,17 @@ DATABASE_IMAGE_FILE_TL = "database_images.dat"
 DATABASE_CAPTION_DIR_TL = "include/output/data/triplet_loss/database_captions/"
 # filename of captions database
 DATABASE_CAPTION_FILE_TL = "database_captions.dat"
+
 # B) CROSS MODAL MODEl (PART 2)
+# TODO
 
+```
 
-# TODO add part 2
+## A Triplet loss modal (Part 1)
+### A.1 given a new caption retrieve most similar images
+#### Step 1:  create search engine object for a *new caption*
 
-# %%
-# ----------------------------------------------------------------
-# 3) CREATE MODEL
-# ----------------------------------------------------------------
-
-# A) TRIPLET LOSS MODEL (TL) (PART 1)
-
-
-# %% A.1) search engine for new caption
-
-# Step 1: create search engine object
+```python
 Se_new_caption = search_engine.SearchEngine(
     mode="triplet_loss",
     path_transformer=PATH_TRANSFORMER_TL,
@@ -65,9 +55,12 @@ Se_new_caption = search_engine.SearchEngine(
     database_images_path=DATABASE_IMAGE_DIR_TL + DATABASE_IMAGE_FILE_TL,
     database_captions_path=DATABASE_CAPTION_DIR_TL + DATABASE_CAPTION_FILE_TL
 )
-# %%
-# Step 2: load database (you only need to do this once, except if you have a new model)
-# This will take a moment (1min)
+```
+
+#### Step 2: create *image database*
+You only have to create this once! After you have ran this command, you can skip this block of code
+This will take some time (around 1 min.) to run.
+```python
 _ = Se_new_caption.prepare_image_database(
     path_raw_data=PATH_RAW_IMAGE_FEATURES,
     save_dir_database=DATABASE_IMAGE_DIR_TL,
@@ -75,18 +68,21 @@ _ = Se_new_caption.prepare_image_database(
     batch_size=512,
     verbose=True
 )
-# %%
-# Step 3: run pipeline
+```
+#### Step 3: run *caption pipeline*
+```python
 # show 10 closest images for caption '361092202.jpg#4'
 Se_new_caption.new_caption_pipeline(new_id='361092202.jpg#4', k=10)
 
-# %%
-# add new caption and show 20 best photos
+# new caption and show 20 most relevant images
 Se_new_caption.new_caption_pipeline(new="Water sea swimming", k=20)
+```
 
-# %% A.2) search engine for new image
+### A.2 given a new image retrieve most similar captions
 
-# Step 1: create search engine object
+#### Step 1:  create search engine object for a *new image*
+
+```python
 Se_new_image = search_engine.SearchEngine(
     mode="triplet_loss",
     path_transformer=PATH_TRANSFORMER_TL,
@@ -95,9 +91,11 @@ Se_new_image = search_engine.SearchEngine(
     database_images_path=DATABASE_IMAGE_DIR_TL + DATABASE_IMAGE_FILE_TL,
     database_captions_path=DATABASE_CAPTION_DIR_TL + DATABASE_CAPTION_FILE_TL
 )
-# %%
-# Step 2: load database (you only need to do this once, except if you have a new model)
-# This will take a moment (1min)
+```
+#### Step 2: create *caption database*
+You only have to create this once! After you have ran this command, you can skip this block of code
+This will take some time (around 1 min.) to run.
+```python
 _ = Se_new_image.prepare_caption_database(
     path_raw_data=PATH_RAW_CAPTION_FEATURES,
     save_dir_database=DATABASE_CAPTION_DIR_TL,
@@ -106,13 +104,13 @@ _ = Se_new_image.prepare_caption_database(
     verbose=True
 )
 
-# %%
-# Step 3: run pipeline
+```
+#### Step 3: run *image pipeline*
+```python
 # print top 10 captions for image "361092202.jpg"
 Se_new_image.new_image_pipeline(new_id="361092202.jpg", k=10)
+```
 
+## A Cross modal (Part 2)
 
-
-# B) CROSS MODAL MODEl (PART 2)
-
-# TODO add part 2
+*TODO*
