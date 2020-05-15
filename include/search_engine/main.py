@@ -2,8 +2,10 @@
 # 2) LOAD LIBRARIES
 # ----------------------------------------------------------------
 from include.search_engine.load_engine import search_engine
+import matplotlib.pyplot as plt
 import seaborn as sns
 sns.set()
+# interactive plotting: %matplotlib qt5
 
 # TODO:
 # - fix suptitle plot_images: should print the caption in the title
@@ -79,11 +81,11 @@ _ = Se_new_caption.prepare_image_database(
 # Step 3: run pipeline
 # show 10 closest images for caption '361092202.jpg#4'
 Se_new_caption.new_caption_pipeline(new_id='361092202.jpg#4', k=10)
-
+plt.savefig("include/output/figures/triplet_loss/fig1_readme.png")
 # %%
 # add new caption and show 20 best photos
 Se_new_caption.new_caption_pipeline(new="Water sea swimming", k=20)
-
+plt.savefig("include/output/figures/triplet_loss/fig2_readme.png")
 # %% A.2) search engine for new image
 
 # Step 1: create search engine object

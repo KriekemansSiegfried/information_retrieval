@@ -73,10 +73,14 @@ _ = Se_new_caption.prepare_image_database(
 ```python
 # show 10 closest images for caption '361092202.jpg#4'
 Se_new_caption.new_caption_pipeline(new_id='361092202.jpg#4', k=10)
+```
+![Alt text](include/output/figures/triplet_loss/fig1_readme.png?raw=true "Title")
 
+```python
 # new caption and show 20 most relevant images
 Se_new_caption.new_caption_pipeline(new="Water sea swimming", k=20)
 ```
+![Alt text](include/output/figures/triplet_loss/fig2_readme.png?raw=true "Title")
 
 ### A.2 given a new image retrieve most similar captions
 
@@ -110,6 +114,7 @@ _ = Se_new_image.prepare_caption_database(
 # print top 10 captions for image "361092202.jpg"
 Se_new_image.new_image_pipeline(new_id="361092202.jpg", k=10)
 ```
+
 
 ## A Cross modal (Part 2)
 
