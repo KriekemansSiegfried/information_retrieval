@@ -75,7 +75,8 @@ _ = Se_new_caption.prepare_image_database(
 Se_new_caption.new_caption_pipeline(new_id='361092202.jpg#4', k=10)
 ```
 
-<img src="include/output/figures/triplet_loss/fig1_readme.png" alt="drawing" width="600" height="400"/>
+<img src="../include/output/figures/triplet_loss/fig1_readme.png?raw=true" alt="drawing" width="500" height="300" />
+
 
 ```python
 # new caption and show 20 most relevant images
