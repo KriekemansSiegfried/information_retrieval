@@ -75,14 +75,18 @@ _ = Se_new_caption.prepare_image_database(
 Se_new_caption.new_caption_pipeline(new_id='361092202.jpg#4', k=10)
 ```
 
-<img src="https://github.com/KriekemansSiegfried/information_retrieval/blob/master/include/output/figures/triplet_loss/fig1_readme.png" />
+```python
+>>> {'361092202.jpg#4': 'A hiker discovers a feature in an otherwise barren landscape .'}
+```
 
+<img src="https://github.com/KriekemansSiegfried/information_retrieval/blob/master/include/output/figures/triplet_loss/fig1_readme.png" />
 
 
 
 ```python
 # new caption and show 20 most relevant images
 Se_new_caption.new_caption_pipeline(new="Water sea swimming", k=20)
+print(Se_new_caption.new)
 ```
 <img src="https://github.com/KriekemansSiegfried/information_retrieval/blob/master/include/output/figures/triplet_loss/fig2_readme.png" />
 
@@ -117,10 +121,7 @@ _ = Se_new_image.prepare_caption_database(
 ```python
 # print top 10 captions for image "361092202.jpg"
 Se_new_image.new_image_pipeline(new_id="361092202.jpg", k=10)
-print(Se_new_caption.new)
-```
-```python
->>> {'361092202.jpg#4': 'A hiker discovers a feature in an otherwise barren landscape .'}
+
 ```
 
 <img src="https://github.com/KriekemansSiegfried/information_retrieval/blob/master/include/output/figures/triplet_loss/fig3_readme.png" />
