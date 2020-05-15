@@ -9,9 +9,9 @@ import pandas as pd
 from numpy.linalg import norm
 from scipy.sparse import isspmatrix
 import copy
+from math import ceil
 
 # save
-import json
 import os
 import pickle
 
@@ -36,394 +36,111 @@ MODEL_WEIGHTS_PATH = 'include/output/model/triplet_loss/best_model.h5'
 # - fix suptitle plot_images: should print the caption in the title
 # - make class object
 # - add functionality for part 2
-
-# %%
-# -------------------------------------------------------------------------------
-# 1) HELPER FUNCTIONS
-# -------------------------------------------------------------------------------
-
-def embed_new_caption(new_caption=None,
-                      new_caption_id=None,
-                      clean=True,
-                      transformer=None,
-                      caption_embedder=None,
-                      min_word_length=2,
-                      stem=True,
-                      unique_only=False):
-    #  add functionality to load caption id as a new caption
-    if new_caption is None and new_caption_id is not None:
-        all_captions = preprocessing.load_captions()
-        new_caption = {new_caption_id: all_captions[new_caption_id]}
-        print(f'New caption: {new_caption[new_caption_id]}')
-
-    # preprocess caption: clean and transform to either w2v or bow
-    new_caption = preprocess_caption(
-        new_caption,
-        transformer=transformer,
-        stem=stem,
-        clean=clean,
-        unique_only=unique_only,
-        min_word_length=min_word_length)
-
-    # check if format is sparse
-    if isspmatrix(new_caption):
-        new_caption = new_caption.todense()
-
-    return caption_embedder(new_caption)
-
-
-def preprocess_caption(caption=None,
-                       clean=True,
-                       transformer=None,
-                       min_word_length=2,
-                       stem=True,
-                       unique_only=False):
-    if clean:
-        caption = preprocessing.clean_descriptions(
-            descriptions=caption,
-            min_word_length=min_word_length,
-            stem=stem,
-            unique_only=unique_only,
-            verbose=False
-        )
-
-    # convert caption to either bow or word2vec
-    trans = transformer.transform(caption.values())
-    return trans
-
-
-def embed_new_image(new_image_vector=None,
-                    image_embedder=None,
-                    database_images=None,
-                    image_id=None):
-    #  add functionality to load image id as a new image
-    if new_image_vector is None and image_id is not None:
-        idx = np.where(database_images["id"] == image_id)[0][0]
-        new_image_vector = database_images["x"][idx]
-        # reshape to predict: has to be (1, F) format with F the dimensons of the embedding
-        new_image_vector = (new_image_vector.reshape(1, new_image_vector.shape[0]))
-    # embedding
-    return image_embedder.predict(new_image_vector)
-
-
-def prepare_image_database(path='include/input/image_features.csv',
-                           image_embedder=None,
-                           save_dir_database=None,
-                           filename_database="database_images.pkl",
-                           batch_size=512,
-                           verbose=False):
-    """
-    :param path:
-    :return:
-    """
-    if verbose:
-        print("loading image features")
-    database_images = pd.read_csv(path, sep=" ", header=None)
-    image_ids = database_images.iloc[:, 0].values
-    images_x = database_images.iloc[:, 1:].values
-
-    if verbose:
-        print("embedding image features")
-    # loop to make embedding in batch sizes
-    if verbose:
-        print("embedding captions")
-        # to print progress
-        i = 0
-        # needs to be greater than 1
-        n = max(1, len(images_x) // batch_size)
-    embedding = []
-    for batch in get_batch(range(0, len(images_x)), batch_size):
-        batch_embedding = image_embedder.predict(images_x[batch])
-        embedding.append(batch_embedding)
-        if verbose:
-            i += 1
-            print_progress_bar(i=i, maximum=n, post_text="Finish", n_bar=20)
-    if verbose:
-        print("\n")
-    embedding = np.vstack(embedding)
-
-    database_images = {
-        "id": image_ids,
-        "x": images_x,
-        "embedding": embedding
-    }
-    # save
-    if save_dir_database is not None:
-        print("saving image database")
-        if not os.path.exists(save_dir_database):
-            os.makedirs(save_dir_database)
-        f = open(os.path.join(save_dir_database, filename_database), "wb")
-        pickle.dump(database_images, f)
-    return database_images
-
-
-
-def prepare_caption_database(
-        path_raw_data="inlcude/input/results_20130124.token",
-        path_json_format="include/output/data/",
-        transformer=None,
-        caption_embedder=None,
-        clean=True,
-        stem=True,
-        min_word_length=2,
-        batch_size=1024,
-        unique_only=False,
-        save_dir_database=None,
-        filename_database="database_captions.pkl",
-        verbose=False):
-    if verbose:
-        print("loading captions")
-    orig_captions = preprocessing.load_captions(path_raw_data=path_raw_data, dir_to_read_save=path_json_format)
-    captions_x = copy.deepcopy(orig_captions)
-
-    # TODO maybe also loop over preprocess_caption in batch sizes
-    if verbose:
-        print("preprocessing captions")
-    captions_x = preprocess_caption(
-        caption=captions_x,
-        clean=clean,
-        transformer=transformer,
-        min_word_length=min_word_length,
-        stem=stem,
-        unique_only=unique_only
-    )
-
-    # loop to make embedding in batch sizes
-    if verbose:
-        print("embedding captions")
-        # to print progress
-        i = 0
-        # needs to be greater than 1
-        n = max(1, captions_x.shape[0] // batch_size)
-    embedding = []
-    for batch in get_batch(range(0, captions_x.shape[0]), batch_size):
-        batch_X = captions_x[batch]
-        if isspmatrix(batch_X):
-            batch_X = batch_X.todense()
-        batch_embedding = caption_embedder.predict(batch_X)
-        embedding.append(batch_embedding)
-        if verbose:
-            i += 1
-            print_progress_bar(i=i, maximum=n, post_text="Finish", n_bar=20)
-    if verbose:
-        print("\n")
-    embedding = np.vstack(embedding)
-
-    database_captions = {
-        "original_captions": orig_captions,
-        "id": np.array(list(orig_captions.keys())),
-        "x": captions_x,
-        "embedding": embedding
-    }
-
-    # save
-    if save_dir_database is not None:
-        print("saving caption database")
-        if not os.path.exists(save_dir_database):
-            os.makedirs(save_dir_database)
-        joblib.dump(database_captions, os.path.join(save_dir_database, filename_database))
-    return database_captions
-
-
-def rank(distance_metric="L2",
-         new_embedding=None,
-         database_embedding=None,
-         database_id=None,
-         k=10):
-    assert distance_metric in ["L2", "Hamming"]
-
-    if distance_metric == "L2":
-        dist = norm(database_embedding - new_embedding, ord=2, axis=1)
-    else:
-        dist = 1 - np.mean((database_embedding - new_embedding == 0), axis=1)
-
-    # find lowest indices
-    lowest_idx = np.argsort(dist)[0:k]
-    # get lowest distance
-    lowest_dist = dist[lowest_idx].flatten().tolist()
-    # get lowest ids
-    lowest_ids = database_id[lowest_idx].flatten().tolist()
-    # return in dictionary format
-    return dict(zip(lowest_ids, lowest_dist))
-
-
-def plot_images(
-        dic=None,
-        image_dir="include/input/flickr30k-images/",
-        nrows=2,
-        ncols=5,
-        figsize=(20, 10),
-        title_fontsize=30,
-        title_y=1.05,
-        title_x=0.5):
-    fig, axes = plt.subplots(nrows, ncols, figsize=figsize)
-    i = 0
-    for key, value in dic.items():
-        img = cv2.imread(image_dir + key)
-        axes.flatten()[i].imshow(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
-        axes.flatten()[i].set(title=f'Distance: {round(value, 4)}')
-        plt.setp(axes.flatten()[i].get_xticklabels(), visible=False)
-        plt.setp(axes.flatten()[i].get_yticklabels(), visible=False)
-        axes.flatten()[i].tick_params(axis='both', which='both', length=0)
-        axes.flatten()[i].xaxis.grid(False)
-        axes.flatten()[i].yaxis.grid(False)
-        i += 1
-    title = f"Ranking top {nrows * ncols} images"
-    plt.suptitle(title, x=title_x, y=title_y, fontsize=title_fontsize)
-    plt.tight_layout()
-    plt.show()
-
-
-def print_captions(dic=None,
-                   database_captions=None,
-                   image_id=None,
-                   image_dir="include/input/flickr30k-images/",
-                   figsize=(10, 8)):
-    if image_id is not None:
-        plt.figure(figsize=figsize)
-        plt.grid(b=None)  # remove grid lines
-        plt.axis('off')  # remove ticks axes
-        img = cv2.imread(image_dir + image_id)
-        plt.imshow(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
-        plt.show()
-
-    captions_ids = list(dic.keys())
-    caption_distances = list(dic.values())
-    caption_text = []
-    for i, id in enumerate(captions_ids):
-        text = database_captions['original_captions'][id]
-        caption_text.append(text)
-        print(f"Caption ID: {id}, Caption: {text}, Distance: {round(caption_distances[i], 4)}) ")
-    # pandas data frame format
-    out = [captions_ids, caption_text, caption_distances]
-    return pd.DataFrame(out, index=["caption_id", "caption_text", "distance"]).T
-
-
-# -------------------------------------------------------------------------------
-# 2) LOAD MODELS
-# -------------------------------------------------------------------------------
-
-# ---
-# 1.A: Load models for triplet loss (PART 1)
-# ---
-
-# %% Import best trained caption and image model
-print("TRIPLET LOSS: Loading models")
-caption_model_triplet, image_model_triplet = load_model.load_submodels(
-    model_path=MODEL_JSON_PATH, weights_path=MODEL_WEIGHTS_PATH
-)
-
-# import bow model
-transformer_triplet_loss = joblib.load(SAVE_BOW_MODEL)
-
-# ---
-# 1.B: Load models (PART2) TODO add models PART 2
-# ---
-
-# %%
-# -------------------------------------------------------------------------------
-# 3) Specify Caption/ Caption_ID or give image ID
-# -------------------------------------------------------------------------------
-
-# %% 3.1) read in databases to compare new image/caption with
-
-database_images = prepare_image_database(
-    path='include/input/image_features.csv',
-    image_embedder=image_model_triplet,
-    save_dir_database="include/output/data/triplet_loss/database_images",
-    filename_database="database_images.dat",
-    batch_size=512,
-    verbose=True
-)
-# %%
-database_captions = prepare_caption_database(
-    path_raw_data="include/input/results_20130124.token",
-    path_json_format="include/output/data/",
-    transformer=transformer_triplet_loss,
-    caption_embedder=caption_model_triplet,
-    save_dir_database="include/output/data/triplet_loss/database_captions",
-    filename_database="database_captions.dat",
-    stem=True,
-    verbose=True,
-    batch_size=512
-)
-
-# %%
-database_images = joblib.load("include/output/data/triplet_loss/database_images/database_images.dat")
-database_captions = joblib.load("include/output/data/triplet_loss/database_captions/database_captions.dat")
-
-
-#%% TODO create wrapper
-
+# - add paths
+# - make readme
 
 class SearchEngine:
 
-    def __init__(self, mode="triplet_loss", clean=True, min_word_length=2, stem=True, unique_only=False):
+    def __init__(self, mode="triplet_loss",
+                 clean=True,
+                 min_word_length=2,
+                 stem=True,
+                 unique_only=False,
+                 k=10,
+                 path_transformer='include/output/model/triplet_loss/caption_bow_model.pkl',
+                 model_path='include/output/model/triplet_loss/best_model.json',
+                 weights_path='include/output/model/triplet_loss/best_model.h5',
+                 database_images_path="include/output/data/triplet_loss/database_images/database_images.dat",
+                 database_captions_path="include/output/data/triplet_loss/database_captions/database_captions.dat"):
         super().__init__()
         self.mode = mode
         self.clean = clean
         self.min_word_length = min_word_length
         self.stem = stem
         self.unique_only = unique_only
+        self.k = k
+        self.path_transformer = path_transformer
+        self.model_path = model_path
+        self.weights_path = weights_path
+        self.database_images_path = database_images_path
+        self.database_captions_path = database_captions_path
         self.image_model = None
         self.caption_model = None
         self.caption_transformer = None
         self.database = None
-        self.new = None
         self.new_embedding = None
-        self.caption = None
         self.ranking = None
-        self.caption_id = None
-        self.image_id = None
+        self.new = None  # new caption or new image vector
+        self.new_id = None
 
 
-    def load_models_triplet_loss(self,
-                                 model_path='include/output/model/triplet_loss/best_model.json',
-                                 weights_path='include/output/model/triplet_loss/best_model.h5',
-                                 verbose=True):
+    def load_models_triplet_loss(self, verbose=True):
         if verbose:
             print("TRIPLET LOSS (PART 1): Loading models")
-        self.caption_model, self.image_model = load_model.load_submodels(
-            model_path=model_path, weights_path=weights_path
-        )
 
-    def load_caption_transformer_triplet_loss(self,
-                                              path='include/output/model/triplet_loss/caption_bow_model.pkl',
-                                              verbose=True):
+        try:
+            self.caption_model, self.image_model = load_model.load_submodels(
+                model_path=self.model_path, weights_path=self.weights_path
+            )
+        except ValueError:
+            print("Model triptlet loss not found, provide a valid path")
+
+    def load_caption_transformer_triplet_loss(self, verbose=True):
 
         if verbose:
             print("TRIPLET LOSS (PART 1): Loading caption transformer")
-        self.caption_transformer = joblib.load(path)
+        try:
+            self.caption_transformer = joblib.load(self.path_transformer)
+        except ValueError:
+            print("transformer model triplet loss not found, provide a valid path")
 
-    def load_cross_modal_retrieval(self, path=None, verbose=True):
+    def load_cross_modal_retrieval(self, verbose=True):
         if verbose:
             print("CROSS MODAL (PART 2): Loading models")
         # TODO: load modal part 2
+        # self.caption_model, self.image_model =
 
-
-    def load_caption_transformer_cross_modal(self, path=None, verbose=True):
+    def load_caption_transformer_cross_modal(self, verbose=True):
         if verbose:
             print("CROSS MODAL (PART 1): Loading caption transformer")
-        self.caption_transformer = joblib.load(path)
+        try:
+            self.caption_transformer = joblib.load(self.path_transformer)
+        except ValueError:
+            print("transformer model triplet loss not found, provide a valid path")
 
-    def load_database_images(self, path="include/output/data/triplet_loss/database_images/database_images.dat"):
-        return joblib.load(path)
+    def load_database_images(self):
+        return joblib.load(self.database_images_path)
 
-    def load_database_captions(self, path="include/output/data/triplet_loss/database_captions/database_captions.dat"):
-        return joblib.load(path)
+    def load_database_captions(self):
+        return joblib.load(self.database_captions_path)
 
-    def embed_new_caption(self,
-                          new_caption=None,
-                          new_caption_id="361092202.jpg#4",
-                          verbose=True):
+    def embed_new_caption(self, new_caption_id="361092202.jpg#4"):
+
         #  add functionality to load caption id as a new caption
-        if new_caption is None and new_caption_id is not None:
-            self.caption_id = new_caption_id
+        # check if there is a caption or image id provided
+
+        # A) image_id provided and no new_caption
+        if self.new is None and new_caption_id is not None:
+            self.new_id = new_caption_id
             all_captions = preprocessing.load_captions()
+            # dictionary format
             new_caption = {new_caption_id: all_captions[new_caption_id]}
             self.new = copy.deepcopy(new_caption)
-            if verbose:
-                print(new_caption)
+
+        # B) caption provided
+        elif self.new is not None:
+
+            # change to dictionary format
+            if isinstance(self.new, str):
+                new_caption = {"New Caption": self.new}
+                self.new = copy.deepcopy(new_caption)
+            else:
+                new_caption = copy.deepcopy(self.new)
+
+        # C) no caption or valid caption_id
+        else:
+            print("Provide either a new caption or valid caption id")
+
 
         # preprocess caption: clean and transform to either w2v or bow
         new_caption = self.preprocess_caption(caption=new_caption)
@@ -443,14 +160,26 @@ class SearchEngine:
         self.new_embedding = self.caption_model(new_caption)
 
 
-    def embed_new_image(self,
-                        new_image_vector=None,
-                        image_id="361092202.jpg"):
+    def embed_new_image(self, image_id="361092202.jpg"):
 
         # load database_images in case a image_id is provided
-        if image_id is not None:
-                self.image_id = image_id
+        if self.new is None and image_id is not None:
+                self.new_id = image_id
                 database_images = self.load_database_images()
+                idx = np.where(database_images["id"] == image_id)[0][0]
+                new_image_vector = database_images["x"][idx]
+                # reshape to predict: has to be (1, F) format with F the dimensons of the embedding
+                new_image_vector = new_image_vector.reshape(1, new_image_vector.shape[0])
+                self.new = new_image_vector
+
+        # check if there is a image vector
+        elif self.new is not None:
+            new_image_vector = self.new
+
+        # no image vector or image_id
+        else:
+            print("provide either a new image vector or valid image_id")
+
         # check if model is loaded
         if self.image_model is None:
             if self.mode == "triplet_loss":
@@ -459,12 +188,6 @@ class SearchEngine:
                 # TODO add model part 2
                 self.load_cross_modal_retrieval()
 
-        #  add functionality to load image id as a new image
-        if new_image_vector is None and image_id is not None:
-            idx = np.where(database_images["id"] == image_id)[0][0]
-            new_image_vector = database_images["x"][idx]
-            # reshape to predict: has to be (1, F) format with F the dimensons of the embedding
-            new_image_vector = (new_image_vector.reshape(1, new_image_vector.shape[0]))
         # embedding
         self.new_embedding = self.image_model.predict(new_image_vector)
 
@@ -491,8 +214,7 @@ class SearchEngine:
 
 
     def rank(self,
-             distance_metric="L2",
-             k=10):
+             distance_metric="L2"):
 
         assert distance_metric in ["L2", "Hamming"]
 
@@ -502,7 +224,7 @@ class SearchEngine:
             dist = 1 - np.mean((self.database["embedding"] - self.new_embedding == 0), axis=1)
 
         # find lowest indices
-        lowest_idx = np.argsort(dist)[0:k]
+        lowest_idx = np.argsort(dist)[0:self.k]
         # get lowest distance
         lowest_dist = dist[lowest_idx].flatten().tolist()
         # get lowest ids
@@ -519,6 +241,12 @@ class SearchEngine:
             title_fontsize=30,
             title_y=1.05,
             title_x=0.5):
+
+        # TODO FIX UPPER TITLE
+        # check if nrows and ncols matches ranking
+        if self.k != nrows*ncols:
+            nrows = ceil(self.k/ncols)
+
         fig, axes = plt.subplots(nrows, ncols, figsize=figsize)
         i = 0
         for key, value in self.ranking.items():
@@ -531,20 +259,29 @@ class SearchEngine:
             axes.flatten()[i].xaxis.grid(False)
             axes.flatten()[i].yaxis.grid(False)
             i += 1
-        title = f"Ranking top {nrows * ncols} images"
+        title = f"Ranking top {self.k} images"
         plt.suptitle(title, x=title_x, y=title_y, fontsize=title_fontsize)
         plt.tight_layout()
         plt.show()
 
     def print_captions(self,
                        image_dir="include/input/flickr30k-images/",
-                       figsize=(10, 8)):
-        if self.image_id is not None:
+                       figsize=(10, 8),
+                       title_fontsize=30,
+                       title_y=0.97,
+                       title_x=0.5):
+
+        # TODO FIX UPPER TITLE
+
+        if self.new_id is not None:
             plt.figure(figsize=figsize)
             plt.grid(b=None)  # remove grid lines
             plt.axis('off')  # remove ticks axes
-            img = cv2.imread(image_dir + self.image_id)
+            img = cv2.imread(image_dir + self.new_id)
             plt.imshow(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+            # add suptitle with image id
+            if self.new_id is not None:
+                plt.suptitle(f" New image id: {self.new_id}", x=title_x, y=title_y, fontsize=title_fontsize)
             plt.show()
 
         captions_ids = list(self.ranking.keys())
@@ -558,14 +295,143 @@ class SearchEngine:
             print(f"Caption ID: {id}, Caption: {text}, Distance: {round(caption_distances[i], 4)}) ")
         # pandas data frame format
         out = [captions_ids, caption_text, caption_distances]
+        # update format ranking (pandas dataframe instead of dictionary and also add original aption_text)
         return pd.DataFrame(out, index=["caption_id", "caption_text", "distance"]).T
 
+
+    def prepare_image_database(self,
+                               path_raw_data='include/input/image_features.csv',
+                               image_model=None,
+                               save_dir_database=None,
+                               filename_database="database_images.pkl",
+                               batch_size=512,
+                               verbose=True):
+        """
+        :param path:
+        :return:
+        """
+
+        if image_model is None and self.image_model is None:
+            if self.mode == "triplet_loss":
+                self.load_models_triplet_loss()
+            else:
+                # TODO check if this works
+                self.load_cross_modal_retrieval()
+        elif image_model is not None:
+            self.image_model = image_model
+        else:
+            print("Cannot find image model")
+
+        if verbose:
+            print("loading image features")
+        database_images = pd.read_csv(path_raw_data, sep=" ", header=None)
+        image_ids = database_images.iloc[:, 0].values
+        images_x = database_images.iloc[:, 1:].values
+
+        # loop to make embedding in batch sizes
+        if verbose:
+            print("embedding image features for database")
+            # to print progress
+            i = 0
+            # needs to be greater than 1
+            n = max(1, len(images_x) // batch_size)
+        embedding = []
+        for batch in get_batch(range(0, len(images_x)), batch_size):
+            batch_embedding = self.image_model.predict(images_x[batch])
+            embedding.append(batch_embedding)
+            if verbose:
+                i += 1
+                print_progress_bar(i=i, maximum=n, post_text="Finish", n_bar=20)
+        if verbose:
+            print("\n")
+        embedding = np.vstack(embedding)
+
+        database_images = {
+            "id": image_ids,
+            "x": images_x,
+            "embedding": embedding
+        }
+        # save
+        if save_dir_database is not None:
+            print("saving image database")
+            if not os.path.exists(save_dir_database):
+                os.makedirs(save_dir_database)
+            f = open(os.path.join(save_dir_database, filename_database), "wb")
+            pickle.dump(database_images, f)
+        return database_images
+
+    def prepare_caption_database(
+            self,
+            path_raw_data="include/input/results_20130124.token",
+            path_json_format="include/output/data/",
+            caption_model=None,
+            batch_size=1024,
+            save_dir_database=None,
+            filename_database="database_captions.pkl",
+            verbose=True):
+
+        if caption_model is None and self.caption_model is None:
+            if self.mode == "triplet_loss":
+                self.load_models_triplet_loss()
+            else:
+                # TODO check if this works
+                self.load_cross_modal_retrieval()
+        elif caption_model is not None:
+            self.caption_model = caption_model
+        else:
+            print("Cannot find caption model")
+
+        if verbose:
+            print("loading captions")
+        orig_captions = preprocessing.load_captions(path_raw_data=path_raw_data, dir_to_read_save=path_json_format)
+        captions_x = copy.deepcopy(orig_captions)
+
+        # TODO maybe also loop over preprocess_caption in batch sizes
+        if verbose:
+            print("preprocessing captions")
+        captions_x = self.preprocess_caption(caption=captions_x)
+
+        # loop to make embedding in batch sizes
+        if verbose:
+            print("embedding captions for database")
+            # to print progress
+            i = 0
+            # needs to be greater than 1
+            n = max(1, captions_x.shape[0] // batch_size)
+        embedding = []
+        for batch in get_batch(range(0, captions_x.shape[0]), batch_size):
+            batch_X = captions_x[batch]
+            if isspmatrix(batch_X):
+                batch_X = batch_X.todense()
+            batch_embedding = self.caption_model.predict(batch_X)
+            embedding.append(batch_embedding)
+            if verbose:
+                i += 1
+                print_progress_bar(i=i, maximum=n, post_text="Finish", n_bar=20)
+        if verbose:
+            print("\n")
+        embedding = np.vstack(embedding)
+
+        database_captions = {
+            "original_captions": orig_captions,
+            "id": np.array(list(orig_captions.keys())),
+            "x": captions_x,
+            "embedding": embedding
+        }
+
+        # save
+        if save_dir_database is not None:
+            print("saving caption database")
+            if not os.path.exists(save_dir_database):
+                os.makedirs(save_dir_database)
+            joblib.dump(database_captions, os.path.join(save_dir_database, filename_database))
+        return database_captions
 
 
     def new_image_pipeline(self):
 
         # step 1) embed new image
-        self.embed_new_image(self.new)
+        self.embed_new_image()
         # step 2) load caption database (already embedded)
         self.database = self.load_database_captions()
         # step 3) compute distance and rank
@@ -576,7 +442,7 @@ class SearchEngine:
     def new_caption_pipeline(self):
 
         # step 1) embed new caption
-        self.embed_new_caption(self.new)
+        self.embed_new_caption()
         # step 2) load image database (already embedded)
         self.database = self.load_database_images()
         # step 3) compute distance and rank
