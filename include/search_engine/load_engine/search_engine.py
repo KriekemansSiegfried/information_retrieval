@@ -426,8 +426,8 @@ class SearchEngine:
     def print_captions(self,
                        image_dir=None,
                        figsize=(10, 8),
-                       title_fontsize=30,
-                       title_y=0.97,
+                       title_fontsize=20,
+                       title_y=0.88,
                        title_x=0.5):
 
         # TODO FIX UPPER TITLE
