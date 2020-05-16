@@ -36,7 +36,8 @@ class SearchEngine:
                  model_path='include/output/model/triplet_loss/best_model.json',
                  weights_path='include/output/model/triplet_loss/best_model.h5',
                  database_images_path="include/output/data/triplet_loss/database_images/database_images.dat",
-                 database_captions_path="include/output/data/triplet_loss/database_captions/database_captions.dat"):
+                 database_captions_path="include/output/data/triplet_loss/database_captions/database_captions.dat",
+                 image_dir="include/input/flickr30k-images/"):
 
         super().__init__()
         self.mode = mode
@@ -50,6 +51,7 @@ class SearchEngine:
         self.weights_path = weights_path
         self.database_images_path = database_images_path
         self.database_captions_path = database_captions_path
+        self.image_dir = image_dir
         self.new = None  # new caption or new image vector
         self.new_id = None
         self.image_model = None
@@ -256,83 +258,6 @@ class SearchEngine:
         # return in dictionary format
         self.ranking = dict(zip(lowest_ids, lowest_dist))
 
-    def plot_images(
-            self,
-            image_dir="include/input/flickr30k-images/",
-            nrows=2,
-            ncols=5,
-            figsize=(20, 10),
-            title_fontsize=30,
-            title_x=0.5,
-            title_y=1.05):
-
-        self.nrows = nrows
-        self.ncols = ncols
-        self.figsize = figsize
-        self.title_fontsize = title_fontsize
-        self.title_x = title_x
-        self.title_y = title_y
-        # TODO FIX UPPER TITLE
-        # check if nrows and ncols matches ranking
-        if self.k != nrows*ncols:
-            nrows = ceil(self.k/ncols)
-
-        fig, axes = plt.subplots(nrows, ncols, figsize=figsize)
-        i = 0
-        for key, value in self.ranking.items():
-            img = cv2.imread(image_dir + key)
-            axes.flatten()[i].imshow(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
-            axes.flatten()[i].set(title=f'Distance: {round(value, 4)}')
-            plt.setp(axes.flatten()[i].get_xticklabels(), visible=False)
-            plt.setp(axes.flatten()[i].get_yticklabels(), visible=False)
-            axes.flatten()[i].tick_params(axis='both', which='both', length=0)
-            axes.flatten()[i].xaxis.grid(False)
-            axes.flatten()[i].yaxis.grid(False)
-            i += 1
-        title = f"Ranking top {self.k} images"
-        plt.suptitle(title, x=title_x, y=title_y, fontsize=title_fontsize)
-        plt.tight_layout()
-        plt.show()
-
-    def print_captions(self,
-                       image_dir="include/input/flickr30k-images/",
-                       figsize=(10, 8),
-                       title_fontsize=30,
-                       title_y=0.97,
-                       title_x=0.5):
-
-        # TODO FIX UPPER TITLE
-        self.figsize=figsize
-        self.title_fontsize=title_fontsize
-        self.title_y=title_y
-        self.title_x=title_x
-
-        if self.new_id is not None:
-            plt.figure(figsize=figsize)
-            plt.grid(b=None)  # remove grid lines
-            plt.axis('off')  # remove ticks axes
-            img = cv2.imread(image_dir + self.new_id)
-            plt.imshow(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
-            # add suptitle with image id
-            if self.new_id is not None:
-                plt.suptitle(f" New image id: {self.new_id}", x=self.title_x, y=self.title_y, fontsize=self.title_fontsize)
-            plt.show()
-
-        captions_ids = list(self.ranking.keys())
-        caption_distances = list(self.ranking.values())
-        if self.database is None:
-            self.database = self.load_database_captions()
-        caption_text = []
-        for i, id in enumerate(captions_ids):
-            text = self.database['original_captions'][id]
-            caption_text.append(text)
-            print(f"Caption ID: {id}, Caption: {text}, Distance: {round(caption_distances[i], 4)}) ")
-        # pandas data frame format
-        out = [captions_ids, caption_text, caption_distances]
-        # update format ranking (pandas dataframe instead of dictionary and also add original aption_text)
-        return pd.DataFrame(out, index=["caption_id", "caption_text", "distance"]).T
-
-
     def prepare_image_database(self,
                                path_raw_data='include/input/image_features.csv',
                                image_model=None,
@@ -458,6 +383,86 @@ class SearchEngine:
             joblib.dump(database_captions, os.path.join(save_dir_database, filename_database))
         return database_captions
 
+    def plot_images(
+            self,
+            image_dir=None,
+            nrows=2,
+            ncols=5,
+            figsize=(20, 10),
+            title_fontsize=30,
+            title_x=0.5,
+            title_y=1.05):
+
+        if image_dir is not None:
+            self.image_dir = image_dir
+        self.nrows = nrows
+        self.ncols = ncols
+        self.figsize = figsize
+        self.title_fontsize = title_fontsize
+        self.title_x = title_x
+        self.title_y = title_y
+        # TODO FIX UPPER TITLE
+        # check if nrows and ncols matches ranking
+        if self.k != nrows*ncols:
+            nrows = ceil(self.k/ncols)
+
+        fig, axes = plt.subplots(nrows, ncols, figsize=figsize)
+        i = 0
+        for key, value in self.ranking.items():
+            img = cv2.imread(self.image_dir + key)
+            axes.flatten()[i].imshow(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+            axes.flatten()[i].set(title=f'Distance: {round(value, 4)}')
+            plt.setp(axes.flatten()[i].get_xticklabels(), visible=False)
+            plt.setp(axes.flatten()[i].get_yticklabels(), visible=False)
+            axes.flatten()[i].tick_params(axis='both', which='both', length=0)
+            axes.flatten()[i].xaxis.grid(False)
+            axes.flatten()[i].yaxis.grid(False)
+            i += 1
+        title = f"Ranking top {self.k} images"
+        plt.suptitle(title, x=title_x, y=title_y, fontsize=title_fontsize)
+        plt.tight_layout()
+        plt.show()
+
+    def print_captions(self,
+                       image_dir=None,
+                       figsize=(10, 8),
+                       title_fontsize=30,
+                       title_y=0.97,
+                       title_x=0.5):
+
+        # TODO FIX UPPER TITLE
+        if image_dir is not None:
+            self.image_dir = image_dir
+        self.figsize=figsize
+        self.title_fontsize=title_fontsize
+        self.title_y=title_y
+        self.title_x=title_x
+
+
+        if self.new_id is not None:
+            plt.figure(figsize=figsize)
+            plt.grid(b=None)  # remove grid lines
+            plt.axis('off')  # remove ticks axes
+            img = cv2.imread(self.image_dir + self.new_id)
+            plt.imshow(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+            # add suptitle with image id
+            if self.new_id is not None:
+                plt.suptitle(f" New image id: {self.new_id}", x=self.title_x, y=self.title_y, fontsize=self.title_fontsize)
+            plt.show()
+
+        captions_ids = list(self.ranking.keys())
+        caption_distances = list(self.ranking.values())
+        if self.database is None:
+            self.database = self.load_database_captions()
+        caption_text = []
+        for i, id in enumerate(captions_ids):
+            text = self.database['original_captions'][id]
+            caption_text.append(text)
+            print(f"Caption ID: {id}, Caption: {text}, Distance: {round(caption_distances[i], 4)}) ")
+        # pandas data frame format
+        out = [captions_ids, caption_text, caption_distances]
+        # update format ranking (pandas dataframe instead of dictionary and also add original aption_text)
+        return pd.DataFrame(out, index=["caption_id", "caption_text", "distance"]).T
 
     def new_image_pipeline(self, k=None, new=None, new_id=None):
 

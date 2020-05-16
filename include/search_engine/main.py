@@ -25,6 +25,8 @@ sns.set()
 PATH_RAW_IMAGE_FEATURES = 'include/input/image_features.csv'
 # path raw caption features
 PATH_RAW_CAPTION_FEATURES = "include/input/results_20130124.token"
+# directory containg the images
+IMAGE_DIR = "include/input/flickr30k-images/"
 
 # A) TRIPLET LOSS MODEL (TL) (PART 1)
 
@@ -65,7 +67,8 @@ Se_new_caption = search_engine.SearchEngine(
     model_path=MODEL_PATH_TL,
     weights_path=WEIGHT_PATH_TL,
     database_images_path=DATABASE_IMAGE_DIR_TL + DATABASE_IMAGE_FILE_TL,
-    database_captions_path=DATABASE_CAPTION_DIR_TL + DATABASE_CAPTION_FILE_TL
+    database_captions_path=DATABASE_CAPTION_DIR_TL + DATABASE_CAPTION_FILE_TL,
+    image_dir=IMAGE_DIR
 )
 # %%
 # Step 2: load database (you only need to do this once, except if you have a new model)
@@ -97,7 +100,8 @@ Se_new_image = search_engine.SearchEngine(
     model_path=MODEL_PATH_TL,
     weights_path=WEIGHT_PATH_TL,
     database_images_path=DATABASE_IMAGE_DIR_TL + DATABASE_IMAGE_FILE_TL,
-    database_captions_path=DATABASE_CAPTION_DIR_TL + DATABASE_CAPTION_FILE_TL
+    database_captions_path=DATABASE_CAPTION_DIR_TL + DATABASE_CAPTION_FILE_TL,
+    image_dir=IMAGE_DIR
 )
 # %%
 # Step 2: load database (you only need to do this once, except if you have a new model)
