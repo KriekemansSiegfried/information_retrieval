@@ -44,8 +44,8 @@ DATABASE_CAPTION_FILE_TL = "database_captions.dat"
 
 ```
 
-## A Triplet loss modal (Part 1)
-### A.1 given a new caption retrieve most similar images
+## A) Triplet loss modal (Part 1)
+### A.1) given a new caption, retrieve most similar images
 #### Step 1:  create search engine object for a *new caption*
 
 ```python
@@ -93,7 +93,7 @@ Se_new_caption.new_caption_pipeline(new="Water sea swimming", k=20)
 ```
 <img src="https://github.com/KriekemansSiegfried/information_retrieval/blob/master/include/output/figures/triplet_loss/fig2_readme.png" />
 
-### A.2 given a new image retrieve most similar captions
+### A.2) given a new image, retrieve most similar captions
 
 #### Step 1:  create search engine object for a *new image*
 
@@ -146,6 +146,6 @@ top 10 most relevant captions (ranked)
 ```
 
 
-## A Cross modal (Part 2)
+## B) Cross modal (Part 2)
 
 *TODO*
