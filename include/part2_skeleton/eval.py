@@ -1,4 +1,4 @@
-from ranking import ranking
+from include.ranking import ranking
 
 
 def mapk(caption_embeddings, image_embeddings, caption_labels, image_labels, mode='desc', k=10):

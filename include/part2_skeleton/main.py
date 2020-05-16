@@ -1,9 +1,11 @@
 # %%
 import gc
+from typing import List
 
 import torch
 import argparse
 import torch.optim as optim
+from torch.optim.optimizer import Optimizer
 import os
 import sys
 import shutil
@@ -12,11 +14,12 @@ import numpy as np
 from torch.autograd import Variable
 from torch.utils.data import DataLoader
 
-from part2_skeleton.dataset import FLICKR30K
-from part2_skeleton.eval import mapk
-from part2_skeleton.losses import cross_modal_hashing_loss
-from part2_skeleton.models import BasicModel
-from ranking import ranking
+from include.part2_skeleton.SGD import SGD
+from include.part2_skeleton.dataset import FLICKR30K
+from include.part2_skeleton.eval import mapk
+from include.part2_skeleton.losses import cross_modal_hashing_loss
+from include.part2_skeleton.models import BasicModel
+from include.ranking import ranking
 
 parser = argparse.ArgumentParser(description='Cross-modal Retrieval with Hashing')
 parser.add_argument('--name', default='BasicModel', type=str,
@@ -83,9 +86,10 @@ def main():
     img_dim, txt_dim = train_set.get_dimensions()
     model = BasicModel(img_dim, txt_dim, args.dim_hidden, args.c)
 
-    block = np.ones(5 ** 2).reshape(5, 5)
-    S = Variable(torch.from_numpy((np.kron(np.eye(len(train_set) // 5, dtype=int), block))))
 
+    block = np.ones(5 ** 2).reshape(5, 5)
+    # S = Variable(torch.from_numpy((np.kron(np.eye(len(train_set) // 5, dtype=int), block))))
+    S = torch.from_numpy((np.kron(np.eye(len(train_set) // 5, dtype=int), block)))
     if args.cuda:
         model.cuda()
 
@@ -111,7 +115,13 @@ def main():
 
     # set optimizer
     parameters = model.parameters()
-    optimizer = optim.SGD(parameters, lr=args.lr)
+    params = []
+    for p in parameters:
+        params.append(p), print(p.shape)
+    print()
+    optimizer = SGD(params, lr=args.lr)
+    #optimizer = optim.SGD(parameters, lr=args.lr)
+    #optimizer.add_param_group({'params': model.base.parameters()})
     n_parameters = sum([p.data.nelement() for p in model.parameters()])
     print('  + Number of params: {}'.format(n_parameters))
 
@@ -157,12 +167,13 @@ def train(train_loader, model, S, optimizer, epoch):
             y = y.cuda()
 
         # pass data samples to model
-        F, G, B = model(x, y)
-
+        F, G, B = model.forward(x, y)
+        indices_x = indices_x.type(torch.long)
+        indices_y = indices_y.type(torch.long)
         # sim = get_similarity_matrix(indices_x, indices_y)
-        sim = S[indices_x,indices_y]
+        sim = S[indices_x, indices_y]
 
-        map_val = 1
+        map_val = 0.0
         loss_value = cross_modal_hashing_loss(sim, F, G, B, 1, 1)
 
         # record MAP@10 and loss
@@ -172,9 +183,9 @@ def train(train_loader, model, S, optimizer, epoch):
 
         # compute gradient and do optimizer step
         optimizer.zero_grad()
-
         loss_value.backward()
         optimizer.step()
+
         # print progress
         if batch_idx % args.log_interval == 0:
             print('Train Epoch: {} [{}/{}]\t'
@@ -183,6 +194,7 @@ def train(train_loader, model, S, optimizer, epoch):
                 epoch, batch_idx * num_pairs, len(train_loader.dataset),
                 losses.val, losses.avg,
                        100. * maps.val, 100. * maps.avg))
+
 
 def test(test_loader, model, image_labels, caption_labels):
     # switch to evaluation mode

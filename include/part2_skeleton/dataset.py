@@ -9,8 +9,8 @@ from sklearn.feature_extraction.text import CountVectorizer
 from torch.utils.data import Dataset
 import torch as pt
 
-from part2_skeleton.preprocessing import read_split_images
-from part2_skeleton.word2vec import train_w2v, use_w2v
+from include.part2_skeleton.preprocessing import read_split_images
+from include.part2_skeleton.word2vec import train_w2v, use_w2v
 
 PATH = "input/"
 
