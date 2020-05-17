@@ -54,6 +54,11 @@ parser.add_argument('--gamma', type=float, default=1.0, metavar='M',
                     help='factor in the loss function')
 parser.add_argument('--eta', type=float, default=1.0, metavar='M',
                     help='factor in the loss function')
+parser.add_argument('--directory', default='include/output/model/hashing', type=str,
+                    help='directory to save the best model')
+parser.add_argument("--return_counts", type=bool, default=True)
+parser.add_argument("--mode", default='client')
+parser.add_argument("--port", default=52162)
 
 
 # %%
@@ -75,12 +80,14 @@ def main():
 
     # obtain data loaders for train, validation and test sets
     train_set = FLICKR30K(mode='train', limit=5000)
-    test_set = FLICKR30K(mode='test', limit=1000)
     val_set = FLICKR30K(mode='val', limit=500)
+    test_set = FLICKR30K(mode='test', limit=1000)
+
     print('datasets loaded')
     train_loader = DataLoader(train_set, batch_size=args.batch_size, shuffle=True)
-    test_loader = DataLoader(test_set, batch_size=args.batch_size, shuffle=False)
     val_loader = DataLoader(val_set, batch_size=args.batch_size, shuffle=False)
+    test_loader = DataLoader(test_set, batch_size=args.batch_size, shuffle=False)
+
     print('loaders created')
     # create a model for cross-modal retrieval
     img_dim, txt_dim = train_set.get_dimensions()
@@ -151,7 +158,7 @@ def main():
     model.load_state_dict(checkpoint['state_dict'])
     test(test_loader, model, test_set.image_labels, test_set.caption_labels)
 
-
+# %%
 def train(train_loader, model, S, optimizer, epoch):
     losses = AverageMeter()
     maps = AverageMeter()
@@ -233,10 +240,10 @@ def test(test_loader, model, image_labels, caption_labels):
 
     return map_avg
 
-
+# %%
 def save_checkpoint(state, is_best, filename='checkpoint.pth.tar'):
     """saves checkpoint to disk"""
-    directory = "runs/%s/" % (args.name)
+    directory = args.directory
     if not os.path.exists(directory):
         os.makedirs(directory)
     filename = directory + filename
@@ -270,6 +277,6 @@ def adjust_learning_rate(optimizer, epoch):
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
 
-
+# %%
 if __name__ == '__main__':
     main()

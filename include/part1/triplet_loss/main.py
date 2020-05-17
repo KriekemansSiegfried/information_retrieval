@@ -91,13 +91,13 @@ caption_id_train, dataset_train, labels_train = preprocessing.convert_to_triplet
 )
 
 # %% validation
-n_images_val = 1000  # whole dataset
+n_images_val = 1000  # whole dataset: n_images_val = 1000
 caption_id_val, dataset_val, labels_val = preprocessing.convert_to_triplet_dataset(
     captions=caption_val_bow, images=image_val, captions_k=5, p=25, n_row=n_images_val, todense=True
 )
 
 # %% test
-n_images_test = 1000  # whole dataset
+n_images_test = 1000   # whole dataset: n_images_test = 1000
 caption_id_test, dataset_test, labels_test = preprocessing.convert_to_triplet_dataset(
     captions=caption_test_bow, images=image_test, captions_k=5, p=25, n_row=n_images_test, todense=True
 )
@@ -108,7 +108,7 @@ print('network loading')
 caption_feature_size = dataset_train[0].shape[1]
 image_feature_size = dataset_train[2].shape[1]
 custom_optimizer = optimizers.Adam(
-    lr=1e-4, beta_1=0.90, beta_2=0.999, epsilon=None, decay=1e-6, amsgrad=False
+    lr=1e-3, beta_1=0.90, beta_2=0.999, epsilon=None, decay=1e-6, amsgrad=False
 )
 model = network.get_network_triplet_loss(
     caption_size=caption_feature_size, image_size=image_feature_size,
@@ -133,7 +133,7 @@ callbacks = [EarlyStopping(monitor='val_loss', patience=10),
                              verbose=1, save_best_only=True, mode='min'), reduce_lr]
 
 # %%
-real_epochs = 25
+real_epochs = 50
 batch_size = 512
 model.fit(
     x=dataset_train,
