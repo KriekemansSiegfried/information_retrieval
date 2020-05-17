@@ -85,7 +85,6 @@ def rank_embedding(caption_embed=None,
 
 
 def average_precision(dic=None, gtp=1):
-    quotient = sum(1 / (i + 1) for i in range(gtp))
     """
     Computes the average precision for each caption_id/ image_id
 

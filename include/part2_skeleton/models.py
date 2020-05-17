@@ -18,11 +18,11 @@ class BasicModel(nn.Module):
 
         # instantiate basic text projection to shared feature space
         self.txt_proj = torch.nn.Sequential(
-            torch.nn.Linear(txt_dim, 256),
+            torch.nn.Linear(txt_dim, 128),
             torch.nn.ReLU(),
             # torch.nn.Linear(256, 128),
             # torch.nn.ReLU(),
-            torch.nn.Linear(256, c),
+            torch.nn.Linear(128, c),
         )
 
     def forward(self, x, y):
@@ -30,7 +30,7 @@ class BasicModel(nn.Module):
         F = self.img_proj(x).t()
 
         # project description to shared feature space
-        G = self.txt_proj(y).t()
+        G = self.txt_proj(y).squeeze().t()
 
         B = torch.sign(F + G)
 
