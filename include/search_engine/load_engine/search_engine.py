@@ -6,7 +6,7 @@ from numpy.linalg import norm
 from scipy.sparse import isspmatrix
 import copy
 from math import ceil
-import sys
+
 # save
 import os
 import pickle

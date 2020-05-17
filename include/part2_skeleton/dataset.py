@@ -10,6 +10,7 @@ from torch.utils.data import Dataset
 import torch as pt
 from copy import copy
 from random import uniform, randint
+from scipy.sparse import isspmatrix
 
 # own libaries
 from include.part2_skeleton.preprocessing import read_split_images
@@ -84,7 +85,13 @@ class FLICKR30K(Dataset):
 
         self.image_indices = np.random.permutation(len(self.images))
         self.caption_indices = self.create_caption_indices()
-        self.captions = self.captions[self.caption_indices]
+
+        # check if captions are in spare format
+        if isspmatrix(self.captions):
+            self.captions = self.captions[self.caption_indices].todense()
+        else:
+            self.captions = self.captions[self.caption_indices]
+
         self.images = self.images[self.image_indices]
 
     def __getitem__(self, index):
