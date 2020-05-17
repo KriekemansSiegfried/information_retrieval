@@ -152,7 +152,7 @@ nr_captions = nr_images * captions_per_image
 # Define torch variable containing similarity information of captions and images
 block = np.ones(captions_per_image**2).reshape(captions_per_image, captions_per_image)
 S = Variable(torch.from_numpy((np.kron(np.eye(nr_images, dtype=int), block))))
-
+# %%
 
 # F and G: shape (C, D) where D is the number of image_caption pairs
 F_buffer = torch.randn(nr_captions, C)

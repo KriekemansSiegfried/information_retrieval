@@ -80,15 +80,13 @@ def main():
         torch.cuda.manual_seed(args.seed)
 
     # obtain data loaders for train, validation and test sets
-    train_set = FLICKR30K(mode='train', limit=5000, word_transformer='w2v')
-    train_set_2 = FLICKR30K(mode='train_random', limit=5000, word_transformer='w2v')
-    test_set = FLICKR30K(mode='test', limit=1000, word_transformer='w2v')
-    val_set = FLICKR30K(mode='val', limit=500, word_transformer='w2v')
+    train_set = FLICKR30K(mode='train', limit=5000)
+    test_set = FLICKR30K(mode='test', limit=1000)
+    val_set = FLICKR30K(mode='val', limit=500)
     print('datasets loaded')
     train_loader = DataLoader(train_set, batch_size=args.batch_size, shuffle=True)
-    train_loader_2 = DataLoader(train_set_2, batch_size=args.batch_size, shuffle=True)
-    test_loader = DataLoader(test_set, batch_size=args.batch_size, shuffle=True)
-    val_loader = DataLoader(val_set, batch_size=args.batch_size, shuffle=True)
+    test_loader = DataLoader(test_set, batch_size=args.batch_size, shuffle=False)
+    val_loader = DataLoader(val_set, batch_size=args.batch_size, shuffle=False)
     print('loaders created')
     # create a model for cross-modal retrieval
     img_dim, txt_dim = train_set.get_dimensions()
@@ -157,13 +155,6 @@ def main():
     checkpoint = torch.load('runs/%s/' % (args.name) + 'model_best.pth.tar')
     model.load_state_dict(checkpoint['state_dict'])
     test(test_loader, model, test_set.image_labels, test_set.caption_labels)
-
-    plt.figure(figsize=(10, 8))
-    plt.plot(range(len(all_losses.list)),all_losses.list)
-    plt.xlabel("Epochs")
-    plt.ylabel("Hash loss")
-    plt.show()
-    # save figure
 
 
 def train(train_loader, model, S, optimizer, epoch):
