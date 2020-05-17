@@ -5,7 +5,6 @@ from typing import List
 import torch
 import argparse
 import torch.optim as optim
-import matplotlib.pyplot as plt
 from torch.optim.optimizer import Optimizer
 import os
 import sys
@@ -55,6 +54,11 @@ parser.add_argument('--gamma', type=float, default=1.0, metavar='M',
                     help='factor in the loss function')
 parser.add_argument('--eta', type=float, default=1.0, metavar='M',
                     help='factor in the loss function')
+parser.add_argument('--directory', default='include/output/model/hashing/', type=str,
+                    help='directory to save the best model')
+parser.add_argument("--return_counts", type=bool, default=True)
+parser.add_argument("--mode", default='client')
+parser.add_argument("--port", default=52162)
 
 
 # %%
@@ -63,13 +67,8 @@ def main():
     global args
     args = parser.parse_args()
 
-    args.epochs = 25
-    args.batch_size = 250
-    args.lr = 1e-6
-    args.eta = 0.001
-    args.gamma = 0.001
-    global all_losses
-    all_losses = AverageMeter()
+    args.epochs = 20
+    args.lr = 1e-3
 
     args.cuda = not args.no_cuda and torch.cuda.is_available()
     args.cuda = False
@@ -81,16 +80,19 @@ def main():
 
     # obtain data loaders for train, validation and test sets
     train_set = FLICKR30K(mode='train', limit=5000)
-    test_set = FLICKR30K(mode='test', limit=1000)
     val_set = FLICKR30K(mode='val', limit=500)
+    test_set = FLICKR30K(mode='test', limit=1000)
+
     print('datasets loaded')
     train_loader = DataLoader(train_set, batch_size=args.batch_size, shuffle=True)
-    test_loader = DataLoader(test_set, batch_size=args.batch_size, shuffle=False)
     val_loader = DataLoader(val_set, batch_size=args.batch_size, shuffle=False)
+    test_loader = DataLoader(test_set, batch_size=args.batch_size, shuffle=False)
+
     print('loaders created')
     # create a model for cross-modal retrieval
     img_dim, txt_dim = train_set.get_dimensions()
     model = BasicModel(img_dim, txt_dim, args.dim_hidden, args.c)
+
 
     block = np.ones(5 ** 2).reshape(5, 5)
     # S = Variable(torch.from_numpy((np.kron(np.eye(len(train_set) // 5, dtype=int), block))))
@@ -123,10 +125,10 @@ def main():
     params = []
     for p in parameters:
         params.append(p), print(p.shape)
-    print()
-    optimizer = optim.Adam(params, lr=args.lr)
-    # optimizer = optim.SGD(parameters, lr=args.lr)
-    # optimizer.add_param_group({'params': model.base.parameters()})
+
+    optimizer = SGD(params, lr=args.lr)
+    #optimizer = optim.SGD(parameters, lr=args.lr)
+    #optimizer.add_param_group({'params': model.base.parameters()})
     n_parameters = sum([p.data.nelement() for p in model.parameters()])
     print('  + Number of params: {}'.format(n_parameters))
 
@@ -152,11 +154,12 @@ def main():
             'best_map': best_map,
         }, is_best)
 
-    checkpoint = torch.load('runs/%s/' % (args.name) + 'model_best.pth.tar')
+    # load best model
+    checkpoint = torch.load(args.directory + 'model_best.pth.tar')
     model.load_state_dict(checkpoint['state_dict'])
     test(test_loader, model, test_set.image_labels, test_set.caption_labels)
 
-
+# %%
 def train(train_loader, model, S, optimizer, epoch):
     losses = AverageMeter()
     maps = AverageMeter()
@@ -172,9 +175,9 @@ def train(train_loader, model, S, optimizer, epoch):
             y = y.cuda()
 
         # pass data samples to model
-        F, G, B = model(x, y)
-        # indices_x = indices_x.type(torch.long)
-        # indices_y = indices_y.type(torch.long)
+        F, G, B = model.forward(x, y)
+        indices_x = indices_x.type(torch.long)
+        indices_y = indices_y.type(torch.long)
         # sim = get_similarity_matrix(indices_x, indices_y)
         sim = S[indices_x, indices_y]
 
@@ -184,7 +187,6 @@ def train(train_loader, model, S, optimizer, epoch):
         # record MAP@10 and loss
         num_pairs = len(x)
         losses.update(loss_value.item(), num_pairs)
-        all_losses.update(loss_value.item(), num_pairs)
         maps.update(map_val, num_pairs)
 
         # compute gradient and do optimizer step
@@ -219,15 +221,15 @@ def test(test_loader, model, image_labels, caption_labels):
         test_desc.append(np.transpose(desc_embeddings.detach().numpy()))
         test_img.append(np.transpose(img_embeddings.detach().numpy()))
 
-    test_desc = np.sign(np.concatenate(test_desc, axis=0))
-    test_img = np.sign(np.concatenate(test_img, axis=0)[::5])
+    test_desc = np.concatenate(test_desc, axis=0)
+    test_img = np.concatenate(test_img, axis=0)[::5]
 
     map_desc = mapk(test_desc, test_img, caption_labels, image_labels, 'desc')
     map_img = mapk(test_desc, test_img, caption_labels, image_labels, 'img')
     print('\n{} set: desc MAP@10: {:.2f}'.format(
         test_loader.dataset.mode,
         round(map_desc, 2)))
-    print('\n{} set: img MAP@10: {:.2f}'.format(
+    print('\n{} set: desc MAP@10: {:.2f}'.format(
         test_loader.dataset.mode,
         round(map_img, 2)))
 
@@ -239,16 +241,17 @@ def test(test_loader, model, image_labels, caption_labels):
 
     return map_avg
 
-
+# %%
 def save_checkpoint(state, is_best, filename='checkpoint.pth.tar'):
     """saves checkpoint to disk"""
-    directory = "runs/%s/" % (args.name)
+    directory = args.directory
     if not os.path.exists(directory):
         os.makedirs(directory)
     filename = directory + filename
     torch.save(state, filename)
+    # if best model copy last file and change name to best model
     if is_best:
-        shutil.copyfile(filename, 'runs/%s/' % (args.name) + 'model_best.pth.tar')
+        shutil.copyfile(filename, directory + 'model_best.pth.tar')
 
 
 class AverageMeter(object):
@@ -262,14 +265,12 @@ class AverageMeter(object):
         self.avg = 0
         self.sum = 0
         self.count = 0
-        self.list = []
 
     def update(self, val, n=1):
         self.val = val
         self.sum += val * n
         self.count += n
         self.avg = self.sum / self.count
-        self.list.append(val)
 
 
 def adjust_learning_rate(optimizer, epoch):
@@ -278,6 +279,6 @@ def adjust_learning_rate(optimizer, epoch):
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
 
-
+# %%
 if __name__ == '__main__':
     main()

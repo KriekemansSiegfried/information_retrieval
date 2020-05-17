@@ -12,7 +12,7 @@ from copy import copy
 from random import uniform, randint
 from scipy.sparse import isspmatrix
 
-# own libaries
+# own modules
 from include.part2_skeleton.preprocessing import read_split_images
 from include.part2_skeleton.preprocessing import clean_descriptions
 from include.part2_skeleton.word2vec import train_w2v, use_w2v
@@ -108,6 +108,7 @@ class FLICKR30K(Dataset):
         return len(self.captions)
 
     def get_dimensions(self):
+        """columns of the images and captions"""
         return self.images.shape[1], self.captions.shape[1]
 
     def create_caption_indices(self):
