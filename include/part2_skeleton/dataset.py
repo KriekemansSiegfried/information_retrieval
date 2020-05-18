@@ -37,7 +37,7 @@ class FLICKR30K(Dataset):
         assert mode in ['train', 'val', 'test']
         self.mode = mode
         self.word_transformer = word_transformer
-        self.clean=clean
+        self.clean = clean
         self.dir = dir
         internal_set_images = read_split_images(path=PATH, mode=self.mode, limit=limit)
         if self.mode == 'train':

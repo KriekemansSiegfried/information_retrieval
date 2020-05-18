@@ -1,5 +1,5 @@
 # ----------------------------------------------------------------
-# 2) LOAD LIBRARIES
+# 1) LOAD LIBRARIES
 # ----------------------------------------------------------------
 from include.search_engine.load_engine import search_engine
 import matplotlib.pyplot as plt
@@ -9,17 +9,18 @@ sns.set()
 
 # TODO:
 # - fix suptitle plot_images: should print the caption in the title
-# - add functionality for part 2
-# - make readme
+# - add part 2 to readme
 
 
 # ----------------------------------------------------------------
-# 1) GLOBAL VARIABLES
+# 2) GLOBAL VARIABLES
 # ----------------------------------------------------------------
 
 # %% GLOBAL VARIABLES (indicated in CAPITAL letters)
 
+# ***********************************************
 # COMMON PATHS
+# ***********************************************
 
 # path raw image features
 PATH_RAW_IMAGE_FEATURES = 'include/input/image_features.csv'
@@ -28,7 +29,9 @@ PATH_RAW_CAPTION_FEATURES = "include/input/results_20130124.token"
 # directory containg the images
 IMAGE_DIR = "include/input/flickr30k-images/"
 
+# ***********************************************
 # A) TRIPLET LOSS MODEL (TL) (PART 1)
+# ***********************************************
 
 # path of saved bow or w2v model
 PATH_TRANSFORMER_TL = 'include/output/model/triplet_loss/caption_bow_model.pkl'
@@ -36,7 +39,6 @@ PATH_TRANSFORMER_TL = 'include/output/model/triplet_loss/caption_bow_model.pkl'
 MODEL_PATH_TL = 'include/output/model/triplet_loss/best_model.json'
 # path of weigths of trained model
 WEIGHT_PATH_TL = 'include/output/model/triplet_loss/best_model.h5'
-
 # directory to save image database
 DATABASE_IMAGE_DIR_TL = "include/output/data/triplet_loss/database_images/"
 # filename of image database
@@ -45,23 +47,38 @@ DATABASE_IMAGE_FILE_TL = "database_images.dat"
 DATABASE_CAPTION_DIR_TL = "include/output/data/triplet_loss/database_captions/"
 # filename of captions database
 DATABASE_CAPTION_FILE_TL = "database_captions.dat"
+
+# ***********************************************
 # B) CROSS MODAL MODEl (PART 2)
+# ***********************************************
+
+# path of saved bow or w2v model
+PATH_TRANSFORMER_H = 'include/output/model/hashing/caption_bow_model.pkl'
+# path models (both caption and image)
+MODEL_PATH_H = 'include/output/model/hashing/model_best.pth.tar'
+# directory to save image database
+DATABASE_IMAGE_DIR_H = "include/output/data/hashing/database_images/"
+# filename of image database
+DATABASE_IMAGE_FILE_H = "database_images.pkl"
+# directory to save image captions
+DATABASE_CAPTION_DIR_H = "include/output/data/hashing/database_captions/"
+# filename of captions database
+DATABASE_CAPTION_FILE_H = "database_captions.pkl"
 
 
-# TODO add part 2
-
-# %%
-# ----------------------------------------------------------------
+# -----------------------------------------------------------------------------------------
 # 3) CREATE MODEL
-# ----------------------------------------------------------------
+# -----------------------------------------------------------------------------------------
 
-# A) TRIPLET LOSS MODEL (TL) (PART 1)
+# ------------------------------------------------------------------------------------------
+# B) # A) TRIPLET LOSS MODEL (TL) (PART 1)
+# ------------------------------------------------------------------------------------------
 
 
 # %% A.1) search engine for new caption
 
 # Step 1: create search engine object
-Se_new_caption = search_engine.SearchEngine(
+Se_new_caption_tl = search_engine.SearchEngine(
     mode="triplet_loss",
     path_transformer=PATH_TRANSFORMER_TL,
     model_path=MODEL_PATH_TL,
@@ -73,7 +90,7 @@ Se_new_caption = search_engine.SearchEngine(
 # %%
 # Step 2: load database (you only need to do this once, except if you have a new model)
 # This will take a moment (1min)
-_ = Se_new_caption.prepare_image_database(
+Se_new_caption_tl.prepare_image_database(
     path_raw_data=PATH_RAW_IMAGE_FEATURES,
     save_dir_database=DATABASE_IMAGE_DIR_TL,
     filename_database=DATABASE_IMAGE_FILE_TL,
@@ -83,18 +100,18 @@ _ = Se_new_caption.prepare_image_database(
 # %%
 # Step 3: run pipeline
 # show 10 closest images for caption '361092202.jpg#4'
-Se_new_caption.new_caption_pipeline(new_id='361092202.jpg#4', k=10)
-print(Se_new_caption.new)
+Se_new_caption_tl.new_caption_pipeline(new_id='361092202.jpg#4', k=10)
+print(Se_new_caption_tl.new)
 plt.tight_layout()
 plt.savefig("include/output/figures/triplet_loss/fig1_readme.png")
 # %%
 # add new caption and show 20 best photos
-Se_new_caption.new_caption_pipeline(new="Water sea swimming", k=20)
+Se_new_caption_tl.new_caption_pipeline(new="Water sea swimming", k=20)
 plt.savefig("include/output/figures/triplet_loss/fig2_readme.png")
 # %% A.2) search engine for new image
 
 # Step 1: create search engine object
-Se_new_image = search_engine.SearchEngine(
+Se_new_image_tl = search_engine.SearchEngine(
     mode="triplet_loss",
     path_transformer=PATH_TRANSFORMER_TL,
     model_path=MODEL_PATH_TL,
@@ -106,7 +123,7 @@ Se_new_image = search_engine.SearchEngine(
 # %%
 # Step 2: load database (you only need to do this once, except if you have a new model)
 # This will take a moment (1min)
-_ = Se_new_image.prepare_caption_database(
+Se_new_image_tl.prepare_caption_database(
     path_raw_data=PATH_RAW_CAPTION_FEATURES,
     save_dir_database=DATABASE_CAPTION_DIR_TL,
     filename_database=DATABASE_CAPTION_FILE_TL,
@@ -117,10 +134,71 @@ _ = Se_new_image.prepare_caption_database(
 # %%
 # Step 3: run pipeline
 # print top 10 captions for image "361092202.jpg"
-Se_new_image.new_image_pipeline(new_id="361092202.jpg", k=10)
+Se_new_image_tl.new_image_pipeline(new_id="361092202.jpg", k=10)
+plt.tight_layout()
 plt.savefig("include/output/figures/triplet_loss/fig3_readme.png")
 
+# ------------------------------------------------------------------------------------------
+# B) HASHING (PART 2)
+# ------------------------------------------------------------------------------------------
+# %% B.1) search engine for new caption
 
-# B) CROSS MODAL MODEl (PART 2)
+# Step 1: create search engine object
+Se_new_caption_h = search_engine.SearchEngine(
+    mode="hashing",
+    path_transformer=PATH_TRANSFORMER_H,
+    model_path=MODEL_PATH_H,
+    database_images_path=DATABASE_IMAGE_DIR_H + DATABASE_IMAGE_FILE_H,
+    database_captions_path=DATABASE_CAPTION_DIR_H + DATABASE_CAPTION_FILE_H,
+    image_dir=IMAGE_DIR
+)
+# %%
+# Step 2: load database (you only need to do this once, except if you have a new model)
+# This will take a moment (1min)
+Se_new_caption_h.prepare_caption_database(
+    path_raw_data=PATH_RAW_CAPTION_FEATURES,
+    save_dir_database=DATABASE_CAPTION_DIR_H,
+    filename_database=DATABASE_CAPTION_FILE_H,
+    batch_size=512,
+    verbose=True
+)
 
-# TODO add part 2
+# %% Step 3: run pipeline
+# show 10 closest images for caption '361092202.jpg#4'
+Se_new_caption_h.new_caption_pipeline(new_id='361092202.jpg#4', k=10)
+print(Se_new_caption_h.new)
+plt.tight_layout()
+plt.savefig("include/output/figures/hashing/fig1_readme.png")
+# %%
+# add new caption and show 20 best photos
+Se_new_caption_h.new_caption_pipeline(new="Water sea swimming", k=20)
+plt.savefig("include/output/figures/hashing/fig2_readme.png")
+
+
+# %% B.2) search engine for new image
+
+# Step 1: create search engine object
+Se_new_image_h = search_engine.SearchEngine(
+    mode="hashing",
+    path_transformer=PATH_TRANSFORMER_H,
+    model_path=MODEL_PATH_H,
+    database_images_path=DATABASE_IMAGE_DIR_H + DATABASE_IMAGE_FILE_H,
+    database_captions_path=DATABASE_CAPTION_DIR_H + DATABASE_CAPTION_FILE_H,
+    image_dir=IMAGE_DIR
+)
+# %%
+# Step 2: load database (you only need to do this once, except if you have a new model)
+# This will take a moment (1min)
+Se_new_image_h.prepare_caption_database(
+    path_raw_data=PATH_RAW_CAPTION_FEATURES,
+    save_dir_database=DATABASE_CAPTION_DIR_H,
+    filename_database=DATABASE_CAPTION_FILE_H,
+    batch_size=1024,
+    verbose=True
+)
+
+# %%
+# Step 3: run pipeline
+# print top 10 captions for image "361092202.jpg"
+Se_new_image_h.new_image_pipeline(new_id="361092202.jpg", k=10)
+plt.savefig("include/output/figures/triplet_loss/fig3_readme.png")

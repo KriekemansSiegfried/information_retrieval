@@ -6,6 +6,8 @@ from numpy.linalg import norm
 from scipy.sparse import isspmatrix
 import copy
 from math import ceil
+import torch
+from torch.autograd import Variable
 
 # save
 import os
@@ -15,12 +17,12 @@ import pickle
 import cv2
 import matplotlib.pyplot as plt
 
-
 # own functions
 from include.part1.triplet_loss.load_model import load_model
 from include.preprocess_data import preprocessing
 from include.util.util import print_progress_bar
 from include.util.util import get_batch
+from include.part2_skeleton.models import BasicModel
 
 
 class SearchEngine:
@@ -37,7 +39,8 @@ class SearchEngine:
                  weights_path='include/output/model/triplet_loss/best_model.h5',
                  database_images_path="include/output/data/triplet_loss/database_images/database_images.dat",
                  database_captions_path="include/output/data/triplet_loss/database_captions/database_captions.dat",
-                 image_dir="include/input/flickr30k-images/"):
+                 image_dir="include/input/flickr30k-images/",
+                 c=32):
 
         super().__init__()
         self.mode = mode
@@ -52,6 +55,7 @@ class SearchEngine:
         self.database_images_path = database_images_path
         self.database_captions_path = database_captions_path
         self.image_dir = image_dir
+        self.c = c
         self.new = None  # new caption or new image vector
         self.new_id = None
         self.image_model = None
@@ -67,60 +71,61 @@ class SearchEngine:
         self.title_x = None
         self.nrows = None
         self.ncols = None
+        self.img_dim = None
+        self.txt_dim = None
+        self.dim_hidden = None
 
+        assert self.mode in ["triplet_loss", "hashing"], "mode should be either triplet_loss or hashing"
 
-    def load_models_triplet_loss(self, verbose=True):
+    def load_models(self, verbose=True, c=32, img_dim=2048, txt_dim=10684, dim_hidden=512):
+
+        self
+
+        if self.mode == "triplet_loss":
+            if verbose:
+                print("TRIPLET LOSS (PART 1): Loading models")
+
+            try:
+                self.caption_model, self.image_model = load_model.load_submodels(
+                    model_path=self.model_path, weights_path=self.weights_path
+                )
+            except ValueError:
+                print("Model  not found, provide a valid path")
+        else:
+            if verbose:
+                print("HASHING (PART 2): Loading models")
+            try:
+                model = BasicModel(img_dim, txt_dim, dim_hidden, c)
+                checkpoint = torch.load(self.model_path)
+                model.load_state_dict(checkpoint['state_dict'])
+                self.caption_model = model.txt_proj
+                self.image_model = model.img_proj
+            except ValueError:
+                print("Model not found, provide a valid path")
+
+    def load_caption_transformer(self, verbose=True):
+
         if verbose:
-            print("TRIPLET LOSS (PART 1): Loading models")
-
-        try:
-            self.caption_model, self.image_model = load_model.load_submodels(
-                model_path=self.model_path, weights_path=self.weights_path
-            )
-        except ValueError:
-            print("Model triptlet loss not found, provide a valid path")
-
-    def load_caption_transformer_triplet_loss(self, verbose=True):
-
-        if verbose:
-            print("TRIPLET LOSS (PART 1): Loading caption transformer")
+            print("Loading caption transformer")
         try:
             self.caption_transformer = joblib.load(self.path_transformer)
         except ValueError:
             print("transformer model triplet loss not found, provide a valid path")
 
-    def load_cross_modal_retrieval(self, verbose=True):
-        if verbose:
-            print("CROSS MODAL (PART 2): Loading models")
-
-        try:
-            pass
-            # TODO: load modal part 2
-            # self.caption_model, self.image_model =
-        except ValueError:
-            print("transformer cross_modal not found, provide a valid path")
-
-    def load_caption_transformer_cross_modal(self, verbose=True):
-        if verbose:
-            print("CROSS MODAL (PART 1): Loading caption transformer")
-        try:
-            self.caption_transformer = joblib.load(self.path_transformer)
-        except ValueError:
-            print("transformer model triplet loss not found, provide a valid path")
 
     def load_database_images(self):
         try:
             database = joblib.load(self.database_images_path)
         except ValueError:
             print("image database could not be loaded, provide a valid path")
-        return database
+        self.database = database
 
     def load_database_captions(self):
         try:
             database = joblib.load(self.database_captions_path)
         except ValueError:
             print("caption database could not be loaded, provide a valid path")
-        return database
+        self.database = database
 
     def embed_new_caption(self, new_caption_id="361092202.jpg#4"):
 
@@ -161,20 +166,18 @@ class SearchEngine:
 
         # check if model is loaded
         if self.caption_model is None:
-            if self.mode == "triplet_loss":
-                try:
-                    self.load_models_triplet_loss()
-                except ValueError:
-                    print("Model could not be loaded")
-            else:
-                try:
-                    # TODO add model part 2
-                    self.load_cross_modal_retrieval()
-                except ValueError:
-                    print("Model could not be loaded")
-
-        self.new_embedding = self.caption_model(new_caption)
-
+            try:
+                self.load_models()
+            except ValueError:
+                print("Model could not be loaded")
+        if self.mode == "triplet_loss":
+            self.new_embedding = self.caption_model(new_caption)
+        else:
+            # transform from numpy to torch
+            new_caption = Variable(torch.from_numpy(new_caption)).float()
+            new_caption = new_caption.reshape(new_caption.shape[0], 1, new_caption.shape[1])
+            # store back to numpy array and reshape to 1, 32 array
+            self.new_embedding = self.caption_model(new_caption).data.detach().numpy().reshape(1, self.c)
 
     def embed_new_image(self, image_id="361092202.jpg"):
 
@@ -182,12 +185,12 @@ class SearchEngine:
         if self.new is None and image_id is not None:
                 self.new_id = image_id
                 try:
-                    database_images = self.load_database_images()
+                    self.load_database_images()
                 except ValueError:
                     print("database images could not be loaded")
 
-                idx = np.where(database_images["id"] == image_id)[0][0]
-                new_image_vector = database_images["x"][idx]
+                idx = np.where(self.database["id"] == image_id)[0][0]
+                new_image_vector = self.database["x"][idx]
                 # reshape to predict: has to be (1, F) format with F the dimensons of the embedding
                 new_image_vector = new_image_vector.reshape(1, new_image_vector.shape[0])
                 self.new = new_image_vector
@@ -202,39 +205,44 @@ class SearchEngine:
 
         # check if model is loaded
         if self.image_model is None:
-            if self.mode == "triplet_loss":
-                try:
-                    self.load_models_triplet_loss()
-                except ValueError:
-                    print("model could not be loaded")
-            else:
-                try:
-                # TODO add model part 2
-                    self.load_cross_modal_retrieval()
-                except ValueError:
-                    print("model could not be loaded")
+            try:
+                self.load_models()
+            except ValueError:
+                print("model could not be loaded")
 
-        # embedding
-        self.new_embedding = self.image_model.predict(new_image_vector)
+        if self.mode == "triplet_loss":
+            self.new_embedding = self.image_model(new_image_vector)
+        # triplet loss
+        else:
+            # transform from numpy to torch
+            new_image_vector = Variable(torch.from_numpy(new_image_vector)).float()
+            # store back to numpy array
+            self.new_embedding = self.image_model(new_image_vector).data.detach().numpy()
 
-
-    def preprocess_caption(self, caption, verbose=False):
+    def preprocess_caption(self, caption=None, verbose=False):
 
         # clean caption
         if self.clean:
-            _ = preprocessing.clean_descriptions(
-                descriptions=caption,
-                min_word_length=self.min_word_length,
-                stem=self.stem,
-                verbose=verbose,
-                unique_only=self.unique_only
-            )
+            if caption is None:
+                caption = self.new
+                # format should be a dictionary
+                if isinstance(caption, str):
+                    caption = {"New Caption": caption}
+            try:
+                _ = preprocessing.clean_descriptions(
+                    descriptions=caption,
+                    min_word_length=self.min_word_length,
+                    stem=self.stem,
+                    verbose=verbose,
+                    unique_only=self.unique_only
+                )
+            except ValueError:
+                print("Non caption provided")
+
         # convert caption to either bow or word2vec
         if self.caption_transformer is None:
-            if self.mode == "triplet_loss":
-                self.load_caption_transformer_triplet_loss()
-            else:
-                self.load_caption_transformer_cross_modal()
+                self.load_caption_transformer()
+        # transform
         trans = self.caption_transformer.transform(caption.values())
         return trans
 
@@ -266,17 +274,11 @@ class SearchEngine:
                                batch_size=512,
                                verbose=True):
 
-
         if image_model is None and self.image_model is None:
-            if self.mode == "triplet_loss":
-                self.load_models_triplet_loss()
-            else:
-                # TODO check if this works
-                self.load_cross_modal_retrieval()
+            self.load_models()
         elif image_model is not None:
             self.image_model = image_model
-        else:
-            raise Exception("Cannot find image model")
+
 
         if verbose:
             print("loading image features")
@@ -293,7 +295,14 @@ class SearchEngine:
             n = max(1, len(images_x) // batch_size)
         embedding = []
         for batch in get_batch(range(0, len(images_x)), batch_size):
-            batch_embedding = self.image_model.predict(images_x[batch])
+            if self.mode == "triplet_loss":
+                batch_embedding = self.image_model(images_x[batch])
+            # hashing
+            else:
+                # transform from numpy to torch
+                image_batch = Variable(torch.from_numpy(images_x[batch])).float()
+                # store back to numpy array
+                batch_embedding = self.image_model(image_batch).data.detach().numpy()
             embedding.append(batch_embedding)
             if verbose:
                 i += 1
@@ -314,7 +323,7 @@ class SearchEngine:
                 os.makedirs(save_dir_database)
             f = open(os.path.join(save_dir_database, filename_database), "wb")
             pickle.dump(database_images, f)
-        return database_images
+        self.database = database_images
 
     def prepare_caption_database(
             self,
@@ -327,15 +336,9 @@ class SearchEngine:
             verbose=True):
 
         if caption_model is None and self.caption_model is None:
-            if self.mode == "triplet_loss":
-                self.load_models_triplet_loss()
-            else:
-                # TODO check if this works
-                self.load_cross_modal_retrieval()
+            self.load_models()
         elif caption_model is not None:
             self.caption_model = caption_model
-        else:
-            raise Exception("Cannot find image model")
 
         if verbose:
             print("loading captions")
@@ -359,7 +362,15 @@ class SearchEngine:
             batch_X = captions_x[batch]
             if isspmatrix(batch_X):
                 batch_X = batch_X.todense()
-            batch_embedding = self.caption_model.predict(batch_X)
+            if self.mode == "triplet_loss":
+                batch_embedding = self.caption_model(batch_X)
+            # hashing
+            else:
+                # transform from numpy to torch
+                batch_X = Variable(torch.from_numpy(batch_X)).float()
+                batch_X = batch_X.reshape(batch_X.shape[0], 1, batch_X.shape[1])
+                # store back to numpy array and reshape to N, 32 matrix
+                batch_embedding = self.caption_model(batch_X).data.detach().numpy().reshape(batch_X.shape[0], self.c)
             embedding.append(batch_embedding)
             if verbose:
                 i += 1
@@ -381,7 +392,7 @@ class SearchEngine:
             if not os.path.exists(save_dir_database):
                 os.makedirs(save_dir_database)
             joblib.dump(database_captions, os.path.join(save_dir_database, filename_database))
-        return database_captions
+        self.database = database_captions
 
     def plot_images(
             self,
@@ -433,11 +444,10 @@ class SearchEngine:
         # TODO FIX UPPER TITLE
         if image_dir is not None:
             self.image_dir = image_dir
-        self.figsize=figsize
-        self.title_fontsize=title_fontsize
-        self.title_y=title_y
-        self.title_x=title_x
-
+        self.figsize = figsize
+        self.title_fontsize = title_fontsize
+        self.title_y = title_y
+        self.title_x = title_x
 
         if self.new_id is not None:
             plt.figure(figsize=figsize)
@@ -452,8 +462,8 @@ class SearchEngine:
 
         captions_ids = list(self.ranking.keys())
         caption_distances = list(self.ranking.values())
-        if self.database is None:
-            self.database = self.load_database_captions()
+        # load caption database
+        self.load_database_captions()
         caption_text = []
         for i, id in enumerate(captions_ids):
             text = self.database['original_captions'][id]
@@ -477,9 +487,10 @@ class SearchEngine:
             self.new_id = new_id
 
         # step 1) embed new image
+        # first load the image vector and later load the model
         self.embed_new_image()
         # step 2) load caption database (already embedded)
-        self.database = self.load_database_captions()
+        self.load_database_captions()
         # step 3) compute distance and rank
         self.rank()
         # step 4) visualize results
@@ -498,9 +509,10 @@ class SearchEngine:
             self.new_id = new_id
 
         # step 1) embed new caption
+        # first process caption and later load the model
         self.embed_new_caption()
         # step 2) load image database (already embedded)
-        self.database = self.load_database_images()
+        self.load_database_images()
         # step 3) compute distance and rank
         self.rank()
         # step 4) print visualize results

@@ -235,7 +235,7 @@ def test(test_loader, model, image_labels, caption_labels):
 
     map_avg = (map_desc + map_img) / 2
 
-    print('{} set: MAP@10: {:.2f}\n'.format(
+    print('{} set: Average (text and images) MAP@10: {:.2f}\n'.format(
         test_loader.dataset.mode,
         round(map_avg, 2)))
 
