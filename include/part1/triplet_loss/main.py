@@ -108,7 +108,7 @@ print('network loading')
 caption_feature_size = dataset_train[0].shape[1]
 image_feature_size = dataset_train[2].shape[1]
 custom_optimizer = optimizers.Adam(
-    lr=1e-3, beta_1=0.90, beta_2=0.999, epsilon=None, decay=1e-6, amsgrad=False
+    lr=1e-4, beta_1=0.90, beta_2=0.999, epsilon=None, decay=1e-6, amsgrad=False
 )
 model = network.get_network_triplet_loss(
     caption_size=caption_feature_size, image_size=image_feature_size,
