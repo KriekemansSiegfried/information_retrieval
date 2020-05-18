@@ -201,4 +201,4 @@ Se_new_image_h.prepare_caption_database(
 # Step 3: run pipeline
 # print top 10 captions for image "361092202.jpg"
 Se_new_image_h.new_image_pipeline(new_id="361092202.jpg", k=10)
-plt.savefig("include/output/figures/triplet_loss/fig3_readme.png")
+plt.savefig("include/output/figures/hashing/fig3_readme.png")
