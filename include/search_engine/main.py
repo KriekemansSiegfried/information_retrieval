@@ -161,6 +161,7 @@ Se_new_caption_h.prepare_caption_database(
     path_raw_data=PATH_RAW_CAPTION_FEATURES,
     save_dir_database=DATABASE_CAPTION_DIR_H,
     filename_database=DATABASE_CAPTION_FILE_H,
+    database_mode="all_data",   # test, training, val or all_data"
     batch_size=512,
     verbose=True
 )
@@ -195,6 +196,7 @@ Se_new_image_h.prepare_caption_database(
     path_raw_data=PATH_RAW_CAPTION_FEATURES,
     save_dir_database=DATABASE_CAPTION_DIR_H,
     filename_database=DATABASE_CAPTION_FILE_H,
+    database_mode="all_data",   # test, training, val or all_data"
     batch_size=1024,
     verbose=True
 )
@@ -229,7 +231,6 @@ while True:
             print(Se_new_caption_tl.new)
             plt.tight_layout()
             plt.show()
-            # plt.savefig("include/output/figures/triplet_loss/fig1_readme.png")
         else:
             Se_new_caption_tl.new_caption_pipeline(new=query, k=10)
             plt.tight_layout()
@@ -240,7 +241,7 @@ while True:
             print(Se_new_caption_tl.new)
             plt.tight_layout()
             plt.show()
-            # plt.savefig("include/output/figures/triplet_loss/fig1_readme.png")
+
         else:
             Se_new_caption_h.new_caption_pipeline(new=query, k=10)
             plt.tight_layout()
