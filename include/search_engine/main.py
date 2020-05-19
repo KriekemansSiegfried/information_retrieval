@@ -94,6 +94,7 @@ Se_new_caption_tl.prepare_image_database(
     path_raw_data=PATH_RAW_IMAGE_FEATURES,
     save_dir_database=DATABASE_IMAGE_DIR_TL,
     filename_database=DATABASE_IMAGE_FILE_TL,
+    database_mode="all_data",   # test, training, val or all_data"
     batch_size=512,
     verbose=True
 )
@@ -127,6 +128,7 @@ Se_new_image_tl.prepare_caption_database(
     path_raw_data=PATH_RAW_CAPTION_FEATURES,
     save_dir_database=DATABASE_CAPTION_DIR_TL,
     filename_database=DATABASE_CAPTION_FILE_TL,
+    database_mode="all_data",   # test, training, val or all_data"
     batch_size=1024,
     verbose=True
 )
@@ -202,3 +204,44 @@ Se_new_image_h.prepare_caption_database(
 # print top 10 captions for image "361092202.jpg"
 Se_new_image_h.new_image_pipeline(new_id="361092202.jpg", k=10)
 plt.savefig("include/output/figures/hashing/fig3_readme.png")
+
+
+# %%
+
+while True:
+    while True:
+        model = input("model:")
+        if model == "hash" or model == "triplet":
+            break
+        else:
+            print("Please choose \"hash\" or \"triplet\"")
+    while True:
+        id_or_text = input("id or text:")
+        if id_or_text == "id" or id_or_text == "text":
+            break
+        else:
+            print("Please choose \"id\" or \"text\"")
+    query = input("query:")
+
+    if model == "triplet":
+        if id_or_text == "id":
+            Se_new_caption_tl.new_caption_pipeline(new_id=query, k=10)
+            print(Se_new_caption_tl.new)
+            plt.tight_layout()
+            plt.show()
+            # plt.savefig("include/output/figures/triplet_loss/fig1_readme.png")
+        else:
+            Se_new_caption_tl.new_caption_pipeline(new=query, k=10)
+            plt.tight_layout()
+            plt.show()
+    else:
+        if id_or_text == "id":
+            Se_new_caption_h.new_caption_pipeline(new_id=query, k=10)
+            print(Se_new_caption_tl.new)
+            plt.tight_layout()
+            plt.show()
+            # plt.savefig("include/output/figures/triplet_loss/fig1_readme.png")
+        else:
+            Se_new_caption_h.new_caption_pipeline(new=query, k=10)
+            plt.tight_layout()
+            plt.show()

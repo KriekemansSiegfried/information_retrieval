@@ -74,6 +74,7 @@ class SearchEngine:
         self.img_dim = None
         self.txt_dim = None
         self.dim_hidden = None
+        self.indices_database = None
 
         assert self.mode in ["triplet_loss", "hashing"], "mode should be either triplet_loss or hashing"
 
@@ -266,12 +267,25 @@ class SearchEngine:
         # return in dictionary format
         self.ranking = dict(zip(lowest_ids, lowest_dist))
 
+    def get_split_idx(self, path="include/input/", mode="test"):
+
+        if mode == "train":
+            self.indices_database = pd.read_csv(path + 'train_idx.txt', dtype=str, header=None).values.flatten().tolist()
+        elif mode == "val":
+            self.indices_database = pd.read_csv(path + 'val_idx.txt', dtype=str, header=None).values.flatten().tolist()
+        elif mode == "test":
+            self.indices_database = pd.read_csv(path + 'test_idx.txt', dtype=str, header=None).values.flatten().tolist()
+        else:
+            ValueError("Mode should either be train, val or test")
+
     def prepare_image_database(self,
                                path_raw_data='include/input/image_features.csv',
                                image_model=None,
                                save_dir_database=None,
                                filename_database="database_images.pkl",
-                               batch_size=512,
+                               database_mode="test",
+                               path_idx="include/input/",
+                               batch_size=256,
                                verbose=True):
 
         if image_model is None and self.image_model is None:
@@ -279,10 +293,15 @@ class SearchEngine:
         elif image_model is not None:
             self.image_model = image_model
 
-
         if verbose:
             print("loading image features")
         database_images = pd.read_csv(path_raw_data, sep=" ", header=None)
+        # filter
+        if database_mode in ["train", "val", "test"]:
+            self.get_split_idx(mode=database_mode, path=path_idx)
+            # split image model in train/validation/test set
+            database_images = database_images[database_images.iloc[:, 0].str.split('.').str[0].isin(self.indices_database)]
+
         image_ids = database_images.iloc[:, 0].values
         images_x = database_images.iloc[:, 1:].values
 
@@ -330,9 +349,12 @@ class SearchEngine:
             path_raw_data="include/input/results_20130124.token",
             path_json_format="include/output/data/",
             caption_model=None,
-            batch_size=1024,
+            batch_size=256,
             save_dir_database=None,
+            database_mode="test",
+            path_idx="include/input/",
             filename_database="database_captions.pkl",
+
             verbose=True):
 
         if caption_model is None and self.caption_model is None:
@@ -343,6 +365,10 @@ class SearchEngine:
         if verbose:
             print("loading captions")
         orig_captions = preprocessing.load_captions(path_raw_data=path_raw_data, dir_to_read_save=path_json_format)
+        # filter
+        if database_mode in ["train", "val", "test"]:
+            self.get_split_idx(mode=database_mode, path=path_idx)
+            orig_captions = {key: value for (key, value) in orig_captions.items() if key.split('.')[0] in self.indices_database}
         captions_x = copy.deepcopy(orig_captions)
 
         # TODO maybe also loop over preprocess_caption in batch sizes

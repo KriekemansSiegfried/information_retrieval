@@ -89,6 +89,7 @@ Se_new_caption_tl.prepare_image_database(
     path_raw_data=PATH_RAW_IMAGE_FEATURES,
     save_dir_database=DATABASE_IMAGE_DIR_TL,
     filename_database=DATABASE_IMAGE_FILE_TL,
+    database_mode="all_data",   # test, training, val or all_data"
     batch_size=512,
     verbose=True
 )
@@ -137,6 +138,7 @@ Se_new_image_tl.prepare_caption_database(
     path_raw_data=PATH_RAW_CAPTION_FEATURES,
     save_dir_database=DATABASE_CAPTION_DIR_TL,
     filename_database=DATABASE_CAPTION_FILE_TL,
+    database_mode="all_data",   # test, training, val or all_data"
     batch_size=1024,
     verbose=True
 )
@@ -187,6 +189,7 @@ Se_new_caption_h.prepare_image_database(
     path_raw_data=PATH_RAW_IMAGE_FEATURES,
     save_dir_database=DATABASE_IMAGE_DIR_H,
     filename_database=DATABASE_IMAGE_FILE_H,
+    database_mode="all_data",   # test, training, val or all_data"
     batch_size=512,
     verbose=True
 )
@@ -233,6 +236,7 @@ Se_new_image_h.prepare_caption_database(
     path_raw_data=PATH_RAW_CAPTION_FEATURES,
     save_dir_database=DATABASE_CAPTION_DIR_H,
     filename_database=DATABASE_CAPTION_FILE_H,
+    database_mode="all_data",   # test, training, val or all_data"
     batch_size=1024,
     verbose=True
 )
