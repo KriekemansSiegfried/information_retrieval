@@ -74,11 +74,11 @@ def mean_average_precision(captions, images, captions_per_image=1):
     f_score = 0.0
     g_score = 0.0
     nr_captions, nr_images = len(captions[0]), len(images[0])
-    # caption_matrix = captions[1].round()
-    # image_matrix = images[1].round()
+    #caption_matrix = captions[1].round()
+    #image_matrix = images[1].round()
     caption_matrix = np.sign(captions[1])
     image_matrix = np.sign(images[1])
-    image_matrix = image_matrix[::captions_per_image]
+    #image_matrix = image_matrix[::captions_per_image]
 
     # -----------------------------------------------------------------------------
     # perform mAP_10 on captions_predictions
@@ -89,7 +89,7 @@ def mean_average_precision(captions, images, captions_per_image=1):
 
         # calculate the distances from the prediction to individual images
         for i in range(nr_images):
-            distances[i] = hamming(image_matrix[i,:], caption)
+            distances[i] = hamming(image_matrix[i, :], caption)
 
         # retrieve the 10 best scoring images
         indexes = find_lowest_sk(distances, 10)

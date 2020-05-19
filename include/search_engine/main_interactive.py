@@ -34,11 +34,11 @@ IMAGE_DIR = "data/flickr30k_images/flickr30k_images/"
 # ***********************************************
 
 # path of saved bow or w2v model
-PATH_TRANSFORMER_TL = 'include/output/model/triplet_loss_pj/caption_bow_model.pkl'
+PATH_TRANSFORMER_TL = 'include/output/model/triplet_loss/caption_bow_model.pkl'
 # path of trained model
 MODEL_PATH_TL = 'include/output/model/triplet_loss/best_model.json'
 # path of weigths of trained model
-WEIGHT_PATH_TL = 'include/output/model/triplet_loss_pj/best_model.h5'
+WEIGHT_PATH_TL = 'include/output/model/triplet_loss/best_model.h5'
 # directory to save image database
 DATABASE_IMAGE_DIR_TL = "include/output/data/triplet_loss/database_images/"
 # filename of image database

@@ -18,7 +18,7 @@ from include.part2.loss.loss import f_loss, g_loss
 
 # %% GLOBAL VARIABLES (indicated in CAPITAL letters)
 # BASE = "include/"
-BASE = "../"
+BASE = ""
 PATH = BASE + "input/"
 
 sns.set()

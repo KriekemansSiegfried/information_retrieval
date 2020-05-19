@@ -84,7 +84,7 @@ joblib.dump(c_vec, SAVE_BOW_MODEL)
 # load your model (just as a test)
 # c_vec = joblib.load(SAVE_BOW_MODEL)
 # %% train
-n_images_train = 29783  # whole dataset:  n_images_train = 29783
+n_images_train = 19783  # whole dataset:  n_images_train = 29783
 caption_id_train, dataset_train, labels_train = preprocessing.convert_to_triplet_dataset(
     captions=caption_train_bow, images=image_train, captions_k=5,
     p=100, n_row=n_images_train, todense=True
