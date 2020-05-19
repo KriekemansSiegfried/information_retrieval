@@ -193,7 +193,6 @@ def train(train_loader, model, S, optimizer, epoch):
         optimizer.zero_grad()
         loss_value.backward()
         optimizer.step()
-
         # print progress
         if batch_idx % args.log_interval == 0:
             print('Train Epoch: {} [{}/{}]\t'
