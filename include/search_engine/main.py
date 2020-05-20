@@ -7,10 +7,6 @@ import seaborn as sns
 sns.set()
 # interactive plotting: %matplotlib qt5
 
-# TODO:
-# - fix suptitle plot_images: should print the caption in the title
-# - add part 2 to readme
-
 
 # ----------------------------------------------------------------
 # 2) GLOBAL VARIABLES
@@ -104,11 +100,11 @@ Se_new_caption_tl.prepare_image_database(
 Se_new_caption_tl.new_caption_pipeline(new_id='361092202.jpg#4', k=10)
 print(Se_new_caption_tl.new)
 plt.tight_layout()
-plt.savefig("include/output/figures/triplet_loss/fig1_readme.png")
+# plt.savefig("include/output/figures/triplet_loss/fig1_readme.png")
 # %%
 # add new caption and show 20 best photos
 Se_new_caption_tl.new_caption_pipeline(new="Water sea swimming", k=20)
-plt.savefig("include/output/figures/triplet_loss/fig2_readme.png")
+# plt.savefig("include/output/figures/triplet_loss/fig2_readme.png")
 # %% A.2) search engine for new image
 
 # Step 1: create search engine object
@@ -138,7 +134,7 @@ Se_new_image_tl.prepare_caption_database(
 # print top 10 captions for image "361092202.jpg"
 Se_new_image_tl.new_image_pipeline(new_id="361092202.jpg", k=10)
 plt.tight_layout()
-plt.savefig("include/output/figures/triplet_loss/fig3_readme.png")
+# plt.savefig("include/output/figures/triplet_loss/fig3_readme.png")
 
 # ------------------------------------------------------------------------------------------
 # B) HASHING (PART 2)
@@ -171,11 +167,11 @@ Se_new_caption_h.prepare_caption_database(
 Se_new_caption_h.new_caption_pipeline(new_id='361092202.jpg#4', k=10)
 print(Se_new_caption_h.new)
 plt.tight_layout()
-plt.savefig("include/output/figures/hashing/fig1_readme.png")
+# plt.savefig("include/output/figures/hashing/fig1_readme.png")
 # %%
 # add new caption and show 20 best photos
 Se_new_caption_h.new_caption_pipeline(new="Water sea swimming", k=20)
-plt.savefig("include/output/figures/hashing/fig2_readme.png")
+# plt.savefig("include/output/figures/hashing/fig2_readme.png")
 
 
 # %% B.2) search engine for new image
@@ -205,7 +201,7 @@ Se_new_image_h.prepare_caption_database(
 # Step 3: run pipeline
 # print top 10 captions for image "361092202.jpg"
 Se_new_image_h.new_image_pipeline(new_id="361092202.jpg", k=10)
-plt.savefig("include/output/figures/hashing/fig3_readme.png")
+# plt.savefig("include/output/figures/hashing/fig3_readme.png")
 
 
 # %%
