@@ -23,6 +23,7 @@ from include.preprocess_data import preprocessing
 from include.util.util import print_progress_bar
 from include.util.util import get_batch
 from include.part2_skeleton.models import BasicModel
+from ranking import ranking
 
 
 class SearchEngine:
@@ -61,6 +62,8 @@ class SearchEngine:
         self.image_model = None
         self.caption_model = None
         self.caption_transformer = None
+        self.database_captions = None
+        self.database_images = None
         self.database = None
         self.new_embedding = None
         self.ranking = None
@@ -117,16 +120,18 @@ class SearchEngine:
     def load_database_images(self):
         try:
             database = joblib.load(self.database_images_path)
+            self.database_images = database
+            self.database = database
         except ValueError:
             print("image database could not be loaded, provide a valid path")
-        self.database = database
 
     def load_database_captions(self):
         try:
             database = joblib.load(self.database_captions_path)
+            self.database_captions = database
+            self.database = database
         except ValueError:
             print("caption database could not be loaded, provide a valid path")
-        self.database = database
 
     def embed_new_caption(self, new_caption_id="361092202.jpg#4"):
 
@@ -343,6 +348,41 @@ class SearchEngine:
             f = open(os.path.join(save_dir_database, filename_database), "wb")
             pickle.dump(database_images, f)
         self.database = database_images
+
+    def get_map10(self):
+        assert(self.database_captions is not None)
+        assert(self.database_images is not None)
+
+        ranking_images = ranking.rank_embedding(
+            caption_embed=self.database_captions['embedding'],
+            caption_id=self.database_captions['id'],
+            image_embed=self.database_images['embedding'],
+            image_id=self.database_images['id'],
+            retrieve="images",
+            distance_metric="L2",
+            k=10,
+            add_correct_id=True
+        )
+
+        # %% 2 b) compute ranking captions
+        ranking_captions = ranking.rank_embedding(
+            caption_embed=self.database_captions['embedding'],
+            caption_id=self.database_captions['id'],
+            image_embed=self.database_images['embedding'],
+            image_id=self.database_images['id'],
+            retrieve="captions",
+            distance_metric="L2",
+            k=10,
+            add_correct_id=True
+        )
+        #
+        # %% 3 a) compute MAP@10 images
+        average_precision_images = ranking.average_precision(ranking_images, gtp=1)
+        print(f"Mean average precision @10 is: {round(average_precision_images.mean()[0] * 100, 4)} %")
+
+        # %% 3 b) compute MAP@10 captions
+        average_precision_captions = ranking.average_precision(ranking_captions, gtp=5)
+        print(f"Mean average precision @10 is: {round(average_precision_captions.mean()[0] * 100, 4)} %")
 
     def prepare_caption_database(
             self,

@@ -27,7 +27,7 @@ PATH_RAW_IMAGE_FEATURES = 'include/input/image_features.csv'
 # path raw caption features
 PATH_RAW_CAPTION_FEATURES = "include/input/results_20130124.token"
 # directory containg the images
-IMAGE_DIR = "include/input/flickr30k-images/"
+IMAGE_DIR = "data/flickr30k_images/flickr30k_images/"
 
 # ***********************************************
 # A) TRIPLET LOSS MODEL (TL) (PART 1)
@@ -38,7 +38,7 @@ PATH_TRANSFORMER_TL = 'include/output/model/triplet_loss/caption_bow_model.pkl'
 # path of trained model
 MODEL_PATH_TL = 'include/output/model/triplet_loss/best_model.json'
 # path of weigths of trained model
-WEIGHT_PATH_TL = 'include/output/model/triplet_loss/best_model.h5'
+WEIGHT_PATH_TL = 'include/output/model/triplet_loss_pj/best_model.h5'
 # directory to save image database
 DATABASE_IMAGE_DIR_TL = "include/output/data/triplet_loss/database_images/"
 # filename of image database
@@ -90,13 +90,18 @@ Se_new_caption_tl = search_engine.SearchEngine(
 # %%
 # Step 2: load database (you only need to do this once, except if you have a new model)
 # This will take a moment (1min)
-Se_new_caption_tl.prepare_image_database(
-    path_raw_data=PATH_RAW_IMAGE_FEATURES,
-    save_dir_database=DATABASE_IMAGE_DIR_TL,
-    filename_database=DATABASE_IMAGE_FILE_TL,
-    batch_size=512,
-    verbose=True
-)
+
+Se_new_caption_tl.load_database_images()
+Se_new_caption_tl.load_database_captions()
+Se_new_caption_tl.get_map10()
+
+# Se_new_caption_tl.prepare_image_database(
+#     path_raw_data=PATH_RAW_IMAGE_FEATURES,
+#     save_dir_database=DATABASE_IMAGE_DIR_TL,
+#     filename_database=DATABASE_IMAGE_FILE_TL,
+#     batch_size=512,
+#     verbose=True
+# )
 
 # ------------------------------------------------------------------------------------------
 # B) HASHING (PART 2)
@@ -112,16 +117,21 @@ Se_new_caption_h = search_engine.SearchEngine(
     database_captions_path=DATABASE_CAPTION_DIR_H + DATABASE_CAPTION_FILE_H,
     image_dir=IMAGE_DIR
 )
+
+Se_new_caption_h.load_database_images()
+Se_new_caption_h.load_database_captions()
+Se_new_caption_h.get_map10()
+
 # %%
 # Step 2: load database (you only need to do this once, except if you have a new model)
 # This will take a moment (1min)
-Se_new_caption_h.prepare_image_database(
-    path_raw_data=PATH_RAW_IMAGE_FEATURES,
-    save_dir_database=DATABASE_IMAGE_DIR_H,
-    filename_database=DATABASE_IMAGE_FILE_H,
-    batch_size=512,
-    verbose=True
-)
+# Se_new_caption_h.prepare_image_database(
+#     path_raw_data=PATH_RAW_IMAGE_FEATURES,
+#     save_dir_database=DATABASE_IMAGE_DIR_H,
+#     filename_database=DATABASE_IMAGE_FILE_H,
+#     batch_size=512,
+#     verbose=True
+# )
 
 while True:
     while True:
