@@ -37,6 +37,7 @@ SAVE_FIGURES = 'include/output/figures/triplet_loss/'
 SAVE_BOW_MODEL = 'include/output/model/triplet_loss/caption_bow_model.pkl'
 MODEL_JSON_PATH = 'include/output/model/triplet_loss/best_model.json'
 MODEL_WEIGHTS_PATH = 'include/output/model/triplet_loss/best_model.h5'
+TRIPLET_MARGIN = 300
 sns.set()
 # %% read in image model
 image_train, image_val, image_test = preprocessing.read_split_images(path=PATH)
@@ -84,7 +85,7 @@ joblib.dump(c_vec, SAVE_BOW_MODEL)
 # load your model (just as a test)
 # c_vec = joblib.load(SAVE_BOW_MODEL)
 # %% train
-n_images_train = 19783  # whole dataset:  n_images_train = 29783
+n_images_train = 29783  # whole dataset:  n_images_train = 29783
 caption_id_train, dataset_train, labels_train = preprocessing.convert_to_triplet_dataset(
     captions=caption_train_bow, images=image_train, captions_k=5,
     p=100, n_row=n_images_train, todense=True
@@ -112,7 +113,7 @@ custom_optimizer = optimizers.Adam(
 )
 model = network.get_network_triplet_loss(
     caption_size=caption_feature_size, image_size=image_feature_size,
-    embedding_size=512, triplet_margin=300, optimizer=custom_optimizer
+    embedding_size=512, triplet_margin=TRIPLET_MARGIN, optimizer=custom_optimizer
 )
 # %%
 # save network and plot
@@ -154,7 +155,7 @@ plt.plot(np.arange(1, num_e_done + 1, 1), model.history.history['loss'], 'g-', l
 plt.plot(np.arange(1, num_e_done + 1, 1), model.history.history['val_loss'], 'r-', label='validation')
 plt.xlabel("Epochs")
 plt.ylabel("Triplet loss")
-plt.ylim([0, 100])
+plt.ylim([0, 250])
 plt.legend()
 plt.show()
 # save figure
