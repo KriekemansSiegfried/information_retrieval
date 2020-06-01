@@ -106,14 +106,14 @@ plt.tight_layout()
 >>> {'361092202.jpg#4': 'A hiker discovers a feature in an otherwise barren landscape .'}
 ```
 
-<img src="https://github.com/KriekemansSiegfried/information_retrieval/blob/master/include/output/figures/triplet_loss/fig1_readme.png" />
+<img src="https://github.com/KriekemansSiegfried/information_retrieval/blob/master/include/output/figures/triplet_loss/figure1_readme.png" />
 
 
 ```python
 # new caption and show 20 most relevant images
 Se_new_caption_tl.new_caption_pipeline(new="Group of children are playing", k=20)
 ```
-<img src="https://github.com/KriekemansSiegfried/information_retrieval/blob/master/include/output/figures/triplet_loss/fig2_readme.png" />
+<img src="https://github.com/KriekemansSiegfried/information_retrieval/blob/master/include/output/figures/triplet_loss/figure2_readme.png" />
 
 ### A.2) given a new image, retrieve most similar captions
 
@@ -150,7 +150,7 @@ Se_new_image_tl.new_image_pipeline(new_id="361092202.jpg", k=10)
 plt.tight_layout()
 ```
 
-<img src="https://github.com/KriekemansSiegfried/information_retrieval/blob/master/include/output/figures/triplet_loss/fig3_readme.png" />
+<img src="https://github.com/KriekemansSiegfried/information_retrieval/blob/master/include/output/figures/triplet_loss/figure3_readme.png" />
 
 Top 10 most relevant captions (ranked)
 ```python
