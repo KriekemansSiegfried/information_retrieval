@@ -111,7 +111,7 @@ plt.tight_layout()
 
 ```python
 # new caption and show 20 most relevant images
-Se_new_caption_tl.new_caption_pipeline(new="Water sea swimming", k=20)
+Se_new_caption_tl.new_caption_pipeline(new="Group of children are playing", k=20)
 ```
 <img src="https://github.com/KriekemansSiegfried/information_retrieval/blob/master/include/output/figures/triplet_loss/fig2_readme.png" />
 
