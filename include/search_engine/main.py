@@ -91,20 +91,21 @@ Se_new_caption_tl.prepare_image_database(
     save_dir_database=DATABASE_IMAGE_DIR_TL,
     filename_database=DATABASE_IMAGE_FILE_TL,
     database_mode="all_data",   # test, training, val or all_data"
-    batch_size=512,
+    batch_size=256,
     verbose=True
 )
+
 # %%
 # Step 3: run pipeline
 # show 10 closest images for caption '361092202.jpg#4'
 Se_new_caption_tl.new_caption_pipeline(new_id='361092202.jpg#4', k=10)
 print(Se_new_caption_tl.new)
 plt.tight_layout()
-# plt.savefig("include/output/figures/triplet_loss/fig1_readme.png")
+plt.savefig("include/output/figures/triplet_loss/fig1_readme.png")
 # %%
 # add new caption and show 20 best photos
-Se_new_caption_tl.new_caption_pipeline(new="Water sea swimming", k=20)
-# plt.savefig("include/output/figures/triplet_loss/fig2_readme.png")
+Se_new_caption_tl.new_caption_pipeline(new="Group of children are playing", k=20)
+plt.savefig("include/output/figures/triplet_loss/fig2_readme.png")
 # %% A.2) search engine for new image
 
 # Step 1: create search engine object
@@ -117,6 +118,8 @@ Se_new_image_tl = search_engine.SearchEngine(
     database_captions_path=DATABASE_CAPTION_DIR_TL + DATABASE_CAPTION_FILE_TL,
     image_dir=IMAGE_DIR
 )
+
+
 # %%
 # Step 2: load database (you only need to do this once, except if you have a new model)
 # This will take a moment (1min)
@@ -133,12 +136,13 @@ Se_new_image_tl.prepare_caption_database(
 # Step 3: run pipeline
 # print top 10 captions for image "361092202.jpg"
 Se_new_image_tl.new_image_pipeline(new_id="361092202.jpg", k=10)
-plt.tight_layout()
-# plt.savefig("include/output/figures/triplet_loss/fig3_readme.png")
+plt.savefig("include/output/figures/triplet_loss/fig3_readme.png")
+
 
 # ------------------------------------------------------------------------------------------
 # B) HASHING (PART 2)
 # ------------------------------------------------------------------------------------------
+
 # %% B.1) search engine for new caption
 
 # Step 1: create search engine object
@@ -151,13 +155,19 @@ Se_new_caption_h = search_engine.SearchEngine(
     image_dir=IMAGE_DIR
 )
 # %%
+
+Se_new_caption_h.load_database_images()
+Se_new_caption_h.load_database_captions()
+Se_new_caption_h.get_map10()
+
+# %%
 # Step 2: load database (you only need to do this once, except if you have a new model)
 # This will take a moment (1min)
 Se_new_caption_h.prepare_caption_database(
     path_raw_data=PATH_RAW_CAPTION_FEATURES,
     save_dir_database=DATABASE_CAPTION_DIR_H,
     filename_database=DATABASE_CAPTION_FILE_H,
-    database_mode="all_data",   # test, training, val or all_data"
+    database_mode="test",   # test, training, val or all_data"
     batch_size=512,
     verbose=True
 )
@@ -170,7 +180,7 @@ plt.tight_layout()
 # plt.savefig("include/output/figures/hashing/fig1_readme.png")
 # %%
 # add new caption and show 20 best photos
-Se_new_caption_h.new_caption_pipeline(new="Water sea swimming", k=20)
+Se_new_caption_h.new_caption_pipeline(new="Group of children are playing", k=20)
 # plt.savefig("include/output/figures/hashing/fig2_readme.png")
 
 
@@ -192,7 +202,7 @@ Se_new_image_h.prepare_caption_database(
     path_raw_data=PATH_RAW_CAPTION_FEATURES,
     save_dir_database=DATABASE_CAPTION_DIR_H,
     filename_database=DATABASE_CAPTION_FILE_H,
-    database_mode="all_data",   # test, training, val or all_data"
+    database_mode="test",   # test, training, val or all_data"
     batch_size=1024,
     verbose=True
 )

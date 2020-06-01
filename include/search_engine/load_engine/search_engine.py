@@ -23,7 +23,7 @@ from include.preprocess_data import preprocessing
 from include.util.util import print_progress_bar
 from include.util.util import get_batch
 from include.part2_skeleton.models import BasicModel
-from ranking import ranking
+from include.ranking import ranking
 
 
 class SearchEngine:
@@ -271,6 +271,8 @@ class SearchEngine:
         lowest_ids = self.database["id"][lowest_idx].flatten().tolist()
         # return in dictionary format
         self.ranking = dict(zip(lowest_ids, lowest_dist))
+
+
 
     def get_split_idx(self, path="include/input/", mode="test"):
 

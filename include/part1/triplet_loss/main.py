@@ -38,6 +38,7 @@ SAVE_BOW_MODEL = 'include/output/model/triplet_loss/caption_bow_model.pkl'
 MODEL_JSON_PATH = 'include/output/model/triplet_loss/best_model.json'
 MODEL_WEIGHTS_PATH = 'include/output/model/triplet_loss/best_model.h5'
 TRIPLET_MARGIN = 300
+STEMMING = True
 sns.set()
 # %% read in image model
 image_train, image_val, image_test = preprocessing.read_split_images(path=PATH)
@@ -57,16 +58,14 @@ caption_test = json.load(open('include/output/data/test.json', 'r'))
 # %% clean captions (don't run this more than once or
 # you will prune your caption dictionary even further as it has the same variable name)
 
-# experiment with it: my experience: seems to work better when training
-stemming = True
 caption_train = preprocessing.clean_descriptions(
-    descriptions=caption_train, min_word_length=2, stem=stemming, unique_only=False
+    descriptions=caption_train, min_word_length=2, stem=STEMMING, unique_only=False
 )
 caption_val = preprocessing.clean_descriptions(
-    descriptions=caption_val, min_word_length=2, stem=stemming, unique_only=False
+    descriptions=caption_val, min_word_length=2, stem=STEMMING, unique_only=False
 )
 caption_test = preprocessing.clean_descriptions(
-    descriptions=caption_test, min_word_length=2, stem=stemming, unique_only=False
+    descriptions=caption_test, min_word_length=2, stem=STEMMING, unique_only=False
 )
 
 # %% convert to bow
@@ -169,7 +168,7 @@ caption_model, image_model = load_model.load_submodels(
 # %%
 # -----------------------------------------
 # Test caption ranking on TEST DATA
-# ----------------------------------------
+# -----------------------------------------
 # index 1 are the positive captions
 # reshape=True if you only have one vector
 

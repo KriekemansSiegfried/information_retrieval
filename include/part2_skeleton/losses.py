@@ -31,10 +31,8 @@ def biranking_loss(a, b, margin, eps=1e-8):
 def cross_modal_hashing_loss(S, F, G, B, gamma, eta):
     # enforce cross-modal similarity
     theta = 0.5 * torch.mm(F.t(), G)
-    dumi1 = S.type(torch.float) * theta.type(torch.float)
-    dumi2 = torch.log(1 + torch.exp(theta)).type(torch.float)
-    term1 = - torch.sum(dumi1 - dumi2)
-    #term1 = - torch.sum((S * theta - torch.log(1 + torch.exp(theta))))
+
+    term1 = - torch.sum((S * theta - torch.log(1 + torch.exp(theta))))
     # enforce binary codes to preserve cross-modal similarity
     term2 = gamma * (torch.norm(B - F) ** 2 + torch.norm(B - G) ** 2)
 
@@ -44,8 +42,8 @@ def cross_modal_hashing_loss(S, F, G, B, gamma, eta):
     loss = torch.sum(term1 + term2 + term3)
     num_sample = S.size(0)
 
-    # print('loss {} => {}'.format(loss.item()/num_sample, (t1.item() / num_sample, t2.item() / num_sample)))
-    #print('loss {} => {}'.format(loss.item() / num_sample,
-    #                             (term1.item() / num_sample, term2.item() / num_sample, term3.item() / num_sample)))
+    # print('loss {} => {}'.format(loss.item()/num_sample, (term1.item() / num_sample, term2.item() / num_sample)))
+    print('loss {} => {}'.format(loss.item() / num_sample,
+                                 (term1.item() / num_sample, term2.item() / num_sample, term3.item() / num_sample)))
 
     return loss / num_sample

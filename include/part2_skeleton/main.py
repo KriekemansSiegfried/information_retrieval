@@ -28,7 +28,7 @@ parser.add_argument('--gpu', type=int, default=0, metavar='N',
                     help='id of gpu to use')
 parser.add_argument('--batch_size', type=int, default=128, metavar='N',
                     help='input batch size for training (default: 128)')
-parser.add_argument('--epochs', type=int, default=20, metavar='N',
+parser.add_argument('--epochs', type=int, default=1, metavar='N',
                     help='number of epochs to train (default: 100)')
 parser.add_argument('--start_epoch', type=int, default=1, metavar='N',
                     help='number of start epoch (default: 1)')
@@ -206,8 +206,6 @@ def train(train_loader, model, S, optimizer, epoch):
 def test(test_loader, model, image_labels, caption_labels):
     # switch to evaluation mode
     model.eval()
-
-    # TODO: Iterate over test set and evaluate MAP@10
 
     image_labels = image_labels.to_numpy()
     caption_labels = np.array(caption_labels)
